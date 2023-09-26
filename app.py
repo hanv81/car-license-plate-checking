@@ -15,9 +15,9 @@ HEADER={'Authorization': 'Token 45f3172a25b6ea562e6174ac2475b7ca26b8e2fc'}
 def call_plate_recognizer_api(frame):
     byte_io = io.BytesIO()
     Image.fromarray(frame).save(byte_io, format='PNG')
-    t = time.time()
+    # t = time.time()
     response = requests.post(url=API_URL, headers=HEADER, files=dict(upload=byte_io.getvalue()))
-    print(time.time() - t)
+    # print(time.time() - t)
     byte_io.close()
     return response
 
@@ -27,6 +27,7 @@ def read_file():
     cap = cv2.VideoCapture('video.avi')
     calls = MAX_CALL
     model = DamageHelper('yolov5s_openvino_model/yolov5s.xml')
+    last_call = 0
     while cap.isOpened():
         ret, frame = cap.read()
         # t = time.time()
@@ -40,11 +41,18 @@ def read_file():
             results = [p for p in results if p[-1] == 2] # car
             for l,t,r,b,_,_ in results:
                 if (r-l)*(b-t) >= 30000:
-                    cv2.rectangle(frame, (l,t), (r,b), (0,0,255), 3)
-                    if calls > 0:
-                        response = call_plate_recognizer_api(frame[top:bottom, left:right])
-                        print(response.json())
+                    cv2.rectangle(frame[top:bottom, left:right], (l,t), (r,b), (0,0,255), 3)
+                    cur_time = time.time()
+                    if cur_time - last_call > 5:
+                        print('reset calls')
+                        calls = MAX_CALL
+                    if calls > 0 and cur_time - last_call > 2:
+                        last_call = time.time()
                         calls -= 1
+                        response = call_plate_recognizer_api(frame[top:bottom, left:right])
+                        if response.json()['results']:
+                            plate = response.json()['results'][0]['plate']
+                            print(plate)
 
         cv2.rectangle(frame, (roi[0], roi[1]), (roi[2], roi[3]), (0,255,0), 3)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
