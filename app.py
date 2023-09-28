@@ -13,7 +13,7 @@ from tracker import track
 MAX_CALL = 3
 API_URL = 'https://api.platerecognizer.com/v1/plate-reader/'
 HEADER={'Authorization': 'Token 45f3172a25b6ea562e6174ac2475b7ca26b8e2fc'}
-left, top, right, bottom = 400, 400, 700, 665   # ROI
+left, top, right, bottom = 400, 400, 900, 665   # ROI
 
 def call_plate_recognizer_api(frame):
     byte_io = io.BytesIO()
@@ -26,26 +26,25 @@ def call_plate_recognizer_api(frame):
 
 def main():
     model = DamageHelper('yolov5s_openvino_model/yolov5s.xml')
-    cap = cv2.VideoCapture('video.avi')
-    q=queue.Queue()
-    stop = False
-    def capture():
-        while not stop:
-            ret, frame = cap.read()
-            if ret:q.put(frame)
-            else:break
-
-    thread = threading.Thread(target=capture)
-    thread.start()
-    time.sleep(5)
-
+    cap = cv2.VideoCapture('video.mp4')
     tracking_info = None
-    while not q.empty():
+
+    def capture(frame):
+        response = call_plate_recognizer_api(frame)
+        results = response.json().get('results')
+        tracking_info['waiting'] = False
+        if results is not None and len(results) > 0:
+            plate = results[0]['plate']
+            print(plate)
+            if plate in ('ar606l', 'a3k961', 'cav2889'):
+                tracking_info['done'] = plate
+
+    while cap.isOpened():
         # t = time.time()
-        frame = q.get()
+        ret, frame = cap.read()
         key = cv2.waitKey(1)
-        if key == ord("q"):
-            stop = True
+        if key == ord("q") or not ret:
+            break
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 3)
         roi = frame[top:bottom, left:right]
@@ -57,18 +56,19 @@ def main():
             detections = track(roi, np.array(results, dtype=float))
             for d in detections:
                 if d.rect.width * d.rect.height >= 30000:
-                    x1, y1, x2, y2 = int(d.rect.x), int(d.rect.y), int(d.rect.max_x), int(d.rect.max_y)
-                    cv2.rectangle(roi, (x1, y1), (x2, y2), (255, 0, 0), 3)
-                    cv2.putText(roi, f'{d.tracker_id}', org=(x1+2, y1+15), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
-                        fontScale=.5, color=(0, 255, 0), thickness=2)
                     if tracking_info is None or tracking_info['id'] != d.tracker_id:
-                        tracking_info = {'id':d.tracker_id, 'waiting':False, 'calls':MAX_CALL}
-                    print(tracking_info)
-                    if not tracking_info['waiting'] and tracking_info['calls'] > 0:
+                        tracking_info = {'id':d.tracker_id, 'waiting':False, 'done':False, 'calls':MAX_CALL}
+
+                    if not tracking_info['done'] and not tracking_info['waiting'] and tracking_info['calls'] > 0:
                         tracking_info['waiting'] = True
                         tracking_info['calls'] -= 1
-                        response = call_plate_recognizer_api(roi)
-                        print(response.json())
+                        threading.Thread(target=capture, args=(roi,)).start()
+
+                    info = '' if not tracking_info['done'] else tracking_info['done']
+                    x1, y1, x2, y2 = int(d.rect.x), int(d.rect.y), int(d.rect.max_x), int(d.rect.max_y)
+                    cv2.rectangle(roi, (x1, y1), (x2, y2), (255, 0, 0), 3)
+                    cv2.putText(roi, f'{d.tracker_id} {info}', org=(x1+2, y1+15), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=.5, color=(0, 255, 0), thickness=2)
 
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         cv2.imshow('frame', frame)
