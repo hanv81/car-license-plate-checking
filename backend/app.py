@@ -7,7 +7,6 @@ HEADER={'Authorization': 'Token 45f3172a25b6ea562e6174ac2475b7ca26b8e2fc'}
 
 @app.post("/verify/")
 async def verify(file: bytes = File(...)):
-	print(type(file))
 	response = requests.post(url=API_URL, headers=HEADER, files=dict(upload=file))
 	results = response.json().get('results')
 	if results is not None and len(results) > 0:
