@@ -11,16 +11,13 @@ from helper import DamageHelper
 from tracker import track
 
 MAX_CALL = 3
-API_URL = 'https://api.platerecognizer.com/v1/plate-reader/'
-HEADER={'Authorization': 'Token 45f3172a25b6ea562e6174ac2475b7ca26b8e2fc'}
+API_URL = 'http://127.0.0.1:8000/verify'
 left, top, right, bottom = 400, 400, 900, 665   # ROI
 
 def call_plate_recognizer_api(frame):
     byte_io = io.BytesIO()
     Image.fromarray(frame).save(byte_io, format='PNG')
-    # t = time.time()
-    response = requests.post(url=API_URL, headers=HEADER, files=dict(upload=byte_io.getvalue()))
-    # print(time.time() - t)
+    response = requests.post(url=API_URL, files=dict(file=byte_io.getvalue()))
     byte_io.close()
     return response
 
@@ -31,13 +28,11 @@ def main():
 
     def capture(frame):
         response = call_plate_recognizer_api(frame)
-        results = response.json().get('results')
         tracking_info['waiting'] = False
-        if results is not None and len(results) > 0:
-            plate = results[0]['plate']
-            print(plate)
-            if plate in ('ar606l', 'a3k961', 'cav2889'):
-                tracking_info['done'] = plate
+        print('server response', response.json())
+        msg = response.json().get('msg')
+        if msg != 'Fail':
+            tracking_info['done'] = msg
 
     while cap.isOpened():
         # t = time.time()
@@ -63,6 +58,7 @@ def main():
                         tracking_info['waiting'] = True
                         tracking_info['calls'] -= 1
                         threading.Thread(target=capture, args=(roi,)).start()
+                        # time.sleep(.5)
 
                     info = '' if not tracking_info['done'] else tracking_info['done']
                     x1, y1, x2, y2 = int(d.rect.x), int(d.rect.y), int(d.rect.max_x), int(d.rect.max_y)
