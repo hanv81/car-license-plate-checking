@@ -25,6 +25,22 @@ def get_user_plate(plate):
     conn.commit()
     return cursor.fetchone()
 
+def get_user_plates(username):
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT `plate` FROM `user_plate` WHERE `username`='{username}'")
+    conn.commit()
+    return cursor.fetchall()
+
+def delete_plate(username, plate):
+    cursor = conn.cursor()
+    try:
+        result = cursor.execute(f"""DELETE FROM `user_plate` 
+                                WHERE `username`='{username}' AND `plate`='{plate}'""")
+        conn.commit()
+    except Exception:
+        result = None
+    return result
+
 def register_plate(username, plate):
     cursor = conn.cursor()
     try:

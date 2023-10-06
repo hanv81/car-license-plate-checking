@@ -96,10 +96,22 @@ async def login(data: OAuth2PasswordRequestForm = Depends()):
     return {"refresh_token": user[3], "access_token": access_token, "token_type": "bearer"}
 
 @app.post('/register_plate')
-async def register_plate(username: str, plate: str, user: User = Depends(get_current_user)):
-    if db.register_plate(username, plate):
+async def register_plate(plate: str, user: User = Depends(get_current_user)):
+    if db.register_plate(user[1], plate):
         return user
     raise internal_server_exception
+
+@app.post('/get_plates')
+async def get_plates(user: User = Depends(get_current_user)):
+    plates = db.get_user_plates(user[1])
+    plates = [plates[i][0] for i in range(len(plates))]
+    return plates
+
+@app.post('/delete_plate')
+async def delete_plate(plate: str, user: User = Depends(get_current_user)):
+    result = db.delete_plate(user[1], plate)
+    if result is None:
+        raise internal_server_exception
 
 @app.post("/verify")
 async def verify(file: bytes = File(...)):
