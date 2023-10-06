@@ -127,7 +127,7 @@ async def verify(file: bytes = File(...)):
             image = Image.open(io.BytesIO(file))
             folder = datetime.now().strftime("%Y%m")
             os.makedirs(os.path.join('history', folder), exist_ok=True)
-            path = os.path.join('history', folder, username + str(time.time_ns()) + '.jpg')
+            path = os.path.join('history', folder, username + '_' + plate + '_' + str(time.time_ns()) + '.jpg')
             image.save(path)
             # db.create_history_table()
             db.add_history(username, path)
