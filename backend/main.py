@@ -1,5 +1,5 @@
 import requests, io, os, time
-import database as db
+import database_lite as db
 from datetime import datetime, timedelta
 from typing import Union
 from fastapi import Depends, FastAPI, HTTPException, status, File
