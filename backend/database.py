@@ -1,4 +1,5 @@
 import sqlite3
+import traceback
 from datetime import datetime
 
 conn = sqlite3.connect('data.db')
@@ -55,17 +56,34 @@ def create_history_table():
     cursor = conn.cursor()
     try:
         sql = f'''CREATE TABLE `history_{datetime.now().strftime("%Y%m")}`
-                    (`id` INTEGER NOT NULL, `username` TEXT NOT NULL, `path` TEXT NOT NULL, PRIMARY KEY(`id` AUTOINCREMENT) );'''
-        print(sql)
+                    (`id` INTEGER NOT NULL,
+                    `username` TEXT NOT NULL,
+                    `plate` TEXT NOT NULL,
+                    `path` TEXT NOT NULL,
+                    PRIMARY KEY(`id` AUTOINCREMENT) );'''
         cursor.execute(sql)
-        print('ok')
+        conn.commit()
     except Exception:
         print('Error create_history_table')
+        traceback.print_exc()
 
-def add_history(username, path):
+def add_history(username, plate, path):
     cursor = conn.cursor()
     try:
-        cursor.execute(f"""INSERT INTO `history_{datetime.now().strftime("%Y%m")}` (`username`, `path`)
-                       VALUES ('{username}', '{path}')""")
+        cursor.execute(f"""INSERT INTO `history_{datetime.now().strftime("%Y%m")}` (`username`, `plate`, `path`)
+                       VALUES ('{username}', '{plate}', '{path}')""")
+        conn.commit()
     except Exception:
         print('Exception add_history')
+
+def get_user_history(username):
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"""SELECT plate, path FROM `history_{datetime.now().strftime("%Y%m")}`
+                       WHERE `username`='{username}'""")
+        conn.commit()
+        result = cursor.fetchall()
+    except:
+        traceback.print_exc()
+        result = None
+    return result
