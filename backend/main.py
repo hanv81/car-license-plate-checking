@@ -1,5 +1,5 @@
 import requests, io, os, time
-import database_lite as db
+import database as db
 from datetime import datetime, timedelta
 from typing import Union
 from fastapi import Depends, FastAPI, HTTPException, status, File
@@ -127,7 +127,7 @@ async def verify(file: bytes = File(...)):
             image = Image.open(io.BytesIO(file))
             folder = datetime.now().strftime("%Y%m")
             os.makedirs(os.path.join('history', folder), exist_ok=True)
-            path = os.path.join('history', folder, username + str(time.time_ns()) + '.jpg')
+            path = 'history/' + folder + '/' + username + str(time.time_ns()) + '.jpg'
             image.save(path)
             # db.create_history_table()
             db.add_history(username, plate, path)
