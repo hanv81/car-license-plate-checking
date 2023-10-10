@@ -12,6 +12,7 @@ from tracker import track
 
 MAX_CALL = 3
 API_URL = 'http://127.0.0.1:8000/verify'
+model = DamageHelper('yolov5s_openvino_model/yolov5s.xml')
 left, top, right, bottom = 400, 400, 900, 665   # ROI
 
 def call_plate_recognizer_api(frame):
@@ -22,8 +23,6 @@ def call_plate_recognizer_api(frame):
     return response
 
 def main():
-    model = DamageHelper('yolov5s_openvino_model/yolov5s.xml')
-    cap = cv2.VideoCapture('video.mp4')
     tracking_info = None
 
     def capture(frame):
@@ -34,12 +33,16 @@ def main():
         if msg != 'Fail':
             tracking_info['done'] = msg
 
+    show_fps = True
+    cap = cv2.VideoCapture('video.mp4')
     while cap.isOpened():
-        # t = time.time()
+        t = time.time()
         ret, frame = cap.read()
         key = cv2.waitKey(1)
         if key == ord("q") or not ret:
             break
+        elif key == ord('f'):
+            show_fps = not show_fps
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 3)
         roi = frame[top:bottom, left:right]
@@ -66,6 +69,11 @@ def main():
                     cv2.putText(roi, f'{d.tracker_id} {info}', org=(x1+2, y1+15), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=.5, color=(0, 255, 0), thickness=2)
 
+        t = time.time() - t
+        if show_fps and t != 0:
+            # print('FPS:', int(1/t))
+            cv2.putText(frame, f'FPS: {int(1/t)}', org=(0, 15), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=.5, color=(0, 0, 255), thickness=2)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         cv2.imshow('frame', frame)
 
