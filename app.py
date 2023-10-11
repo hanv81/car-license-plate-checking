@@ -1,32 +1,40 @@
-import io
-import cv2
-import time
-import json
-import requests
-import queue
-import threading
+import io, cv2, time, requests, threading
 import numpy as np
 from PIL import Image
 from helper import DamageHelper
 from tracker import track
+from jproperties import Properties
 
 MAX_CALL = 3
-API_URL = 'http://127.0.0.1:8000/verify'
-model = DamageHelper('yolov5s_openvino_model/yolov5s.xml')
-left, top, right, bottom = 400, 400, 900, 665   # ROI
 
-def call_plate_recognizer_api(frame):
+def call_plate_recognizer_api(frame, url):
     byte_io = io.BytesIO()
     Image.fromarray(frame).save(byte_io, format='PNG')
-    response = requests.post(url=API_URL, files=dict(file=byte_io.getvalue()))
+    response = requests.post(url=url, files=dict(file=byte_io.getvalue()))
     byte_io.close()
     return response
 
+def read_config():
+    configs = Properties()
+    with open('config.properties', 'rb') as prop:
+        configs.load(prop)
+    
+    roi = list(map(int, configs.get('roi').data.split()))
+    model_path = configs.get('model_path').data
+    backend_url = configs.get('backend_url').data
+    video_src = configs.get('video_src').data
+    calibration_path = configs.get('calibration').data
+    return roi, model_path, backend_url, video_src, calibration_path
+
 def main():
+    roi, model_path, backend_url, _, _ = read_config()
+    left, top, right, bottom = roi
+    model = DamageHelper(model_path)
+
     tracking_info = None
 
     def capture(frame):
-        response = call_plate_recognizer_api(frame)
+        response = call_plate_recognizer_api(frame, backend_url)
         tracking_info['waiting'] = False
         print('server response', response.json())
         msg = response.json().get('msg')
