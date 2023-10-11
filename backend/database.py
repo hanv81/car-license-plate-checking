@@ -1,11 +1,12 @@
 from mysql.connector import Error
 from mysql.connector import pooling
 from datetime import datetime
-import traceback
+import traceback, logging
 
 connection_pool = pooling.MySQLConnectionPool(pool_name="pynative_pool", pool_size=5,
                                               pool_reset_session=True, host='localhost',
                                               database='car-door-plate', user='root', password='180981')
+logging.basicConfig(filename='database.log', encoding='utf-8', level=logging.DEBUG)
 
 def create_user(username, password, refresh_token):
     conn = connection_pool.get_connection()
@@ -17,6 +18,7 @@ def create_user(username, password, refresh_token):
         conn.commit()
     except Error:
         traceback.print_exc()
+        logging.exception(f'create_user {username} {password} {refresh_token}')
         result = False
     finally:
         cursor.close()
@@ -33,6 +35,7 @@ def get_user(username):
         conn.commit()
     except Error:
         traceback.print_exc()
+        logging.exception(f'get_user {username}')
         return None
     finally:
         cursor.close()
@@ -48,6 +51,7 @@ def get_user_plate(plate):
         conn.commit()
     except Error:
         traceback.print_exc()
+        logging.exception(f'get_user_plate {plate}')
         return None
     finally:
         cursor.close()
@@ -63,6 +67,7 @@ def get_user_plates(username):
         conn.commit()
     except Error:
         traceback.print_exc()
+        logging.exception(f'get_user_plates {username}')
         return None
     finally:
         cursor.close()
@@ -79,6 +84,7 @@ def register_plate(username, plate):
         conn.commit()
     except Error:
         traceback.print_exc()
+        logging.exception(f'register_plate {username} {plate}')
         result = False
     finally:
         cursor.close()
@@ -94,6 +100,7 @@ def delete_plate(username, plate):
         conn.commit()
     except Error:
         traceback.print_exc()
+        logging.exception(f'delete_plate {username} {plate}')
         result = False
     finally:
         cursor.close()
@@ -116,6 +123,7 @@ def create_history_table():
         conn.commit()
     except Exception:
         traceback.print_exc()
+        logging.exception('create_history_table')
     finally:
         cursor.close()
         conn.close()
@@ -129,6 +137,7 @@ def add_history(username, plate, path):
         conn.commit()
     except Exception:
         print('Exception add_history')
+        logging.exception(f'add_history {username} {plate} {path}')
     finally:
         cursor.close()
         conn.close()
@@ -143,6 +152,7 @@ def get_user_history(username):
         conn.commit()
     except:
         traceback.print_exc()
+        logging.exception(f'get_user_history {username}')
         result = None
     finally:
         cursor.close()
