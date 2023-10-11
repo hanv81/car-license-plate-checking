@@ -104,7 +104,7 @@ def create_history_table():
     conn = connection_pool.get_connection()
     cursor = conn.cursor()
     try:
-        sql = f'''CREATE TABLE `history_{datetime.now().strftime("%Y%m")}`
+        sql = f'''CREATE TABLE IF NOT EXISTS `history_{datetime.now().strftime("%Y%m")}`
                 (`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
                 `username` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_general_ci',
                 `plate` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_general_ci',
