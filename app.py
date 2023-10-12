@@ -42,6 +42,11 @@ def main():
             tracking_info['done'] = msg
 
     show_fps = True
+
+    # cap = cv2.VideoCapture(0)
+    # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
     cap = cv2.VideoCapture('video.mp4')
     while cap.isOpened():
         t = time.time()
@@ -74,8 +79,8 @@ def main():
                     info = '' if not tracking_info['done'] else tracking_info['done']
                     x1, y1, x2, y2 = int(d.rect.x), int(d.rect.y), int(d.rect.max_x), int(d.rect.max_y)
                     cv2.rectangle(roi, (x1, y1), (x2, y2), (255, 0, 0), 3)
-                    cv2.putText(roi, f'{d.tracker_id} {info}', org=(x1+2, y1+15), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
-                        fontScale=.5, color=(0, 255, 0), thickness=2)
+                    cv2.putText(roi, f'{d.tracker_id} {info}', org=(x1+2, y1+17), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=.8, color=(0, 255, 0), thickness=2)
 
         t = time.time() - t
         if show_fps and t != 0:
