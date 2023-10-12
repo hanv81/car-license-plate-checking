@@ -132,6 +132,7 @@ async def verify(file: bytes = File(...)):
     try:
         if results is not None and len(results) > 0:
             plate = results[0]['plate']
+            msg = f'{plate}'
             username = db.get_user_plate(plate)
             if username:
                 username = username[0]
