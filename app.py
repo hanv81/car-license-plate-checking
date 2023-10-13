@@ -2,15 +2,15 @@ import io, cv2, time, requests, threading
 import numpy as np
 from PIL import Image
 from helper import DamageHelper
-from tracker import track
+from tracker import track,Detection
 from jproperties import Properties
 
 MAX_CALL = 3
 
-def call_plate_recognizer_api(frame, url):
+def call_plate_recognizer_api(url, frame, bbox):
     byte_io = io.BytesIO()
     Image.fromarray(frame).save(byte_io, format='PNG')
-    response = requests.post(url=url, files=dict(file=byte_io.getvalue()))
+    response = requests.post(url=url, files=dict(file=byte_io.getvalue()), params={'bbox':bbox})
     byte_io.close()
     return response
 
@@ -33,8 +33,9 @@ def main():
 
     tracking_info = None
 
-    def capture(frame):
-        response = call_plate_recognizer_api(frame, backend_url)
+    def capture(frame, d:Detection):
+        bbox = str(d.rect.min_x), str(d.rect.min_y), str(d.rect.max_x), str(d.rect.max_y)
+        response = call_plate_recognizer_api(backend_url, frame, ' '.join(bbox))
         tracking_info['waiting'] = False
         print('server response', response.json())
         msg = response.json().get('msg')
@@ -57,7 +58,6 @@ def main():
         elif key == ord('f'):
             show_fps = not show_fps
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 3)
         roi = frame[top:bottom, left:right]
         results = model.process(roi, 416) # detect in ROI only
         if results is not None:
@@ -73,15 +73,15 @@ def main():
                     if not tracking_info['done'] and not tracking_info['waiting'] and tracking_info['calls'] > 0:
                         tracking_info['waiting'] = True
                         tracking_info['calls'] -= 1
-                        threading.Thread(target=capture, args=(roi,)).start()
+                        threading.Thread(target=capture, args=(roi, d)).start()
                         # time.sleep(.5)
 
                     info = '' if not tracking_info['done'] else tracking_info['done']
                     x1, y1, x2, y2 = int(d.rect.x), int(d.rect.y), int(d.rect.max_x), int(d.rect.max_y)
-                    cv2.rectangle(roi, (x1, y1), (x2, y2), (255, 0, 0), 3)
+                    cv2.rectangle(roi, (x1, y1), (x2, y2), (255, 0, 0), 2)
                     cv2.putText(roi, f'{d.tracker_id} {info}', org=(x1+2, y1+17), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=.8, color=(0, 255, 0), thickness=2)
-
+        cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 2)
         t = time.time() - t
         if show_fps and t != 0:
             # print('FPS:', int(1/t))
