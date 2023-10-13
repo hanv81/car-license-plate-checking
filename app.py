@@ -7,12 +7,21 @@ from jproperties import Properties
 
 MAX_CALL = 3
 
-def call_plate_recognizer_api(url, frame, bbox):
+def call_backend_api(url, frame, bbox):
     byte_io = io.BytesIO()
     Image.fromarray(frame).save(byte_io, format='PNG')
     response = requests.post(url=url, files=dict(file=byte_io.getvalue()), params={'bbox':bbox})
     byte_io.close()
     return response
+
+def check_detection(url:str, frame:np.ndarray, d:Detection, tracking:dict):
+    bbox = str(int(d.rect.x)), str(int(d.rect.y)), str(int(d.rect.max_x)), str(int(d.rect.max_y))
+    response = call_backend_api(url, frame, ' '.join(bbox))
+    tracking['waiting'] = False
+    print('server response', response.json(), d.tracker_id)
+    tracking['info'] = response.json().get('msg')
+    if response.json().get('identified'):
+        tracking['done'] = True
 
 def read_config():
     configs = Properties()
@@ -31,17 +40,7 @@ def main():
     left, top, right, bottom = roi
     model = DamageHelper(model_path)
 
-    tracking_info = None
-
-    def capture(frame, d:Detection):
-        bbox = str(d.rect.min_x), str(d.rect.min_y), str(d.rect.max_x), str(d.rect.max_y)
-        response = call_plate_recognizer_api(backend_url, frame, ' '.join(bbox))
-        tracking_info['waiting'] = False
-        print('server response', response.json())
-        msg = response.json().get('msg')
-        if msg != 'Fail':
-            tracking_info['done'] = msg
-
+    tracking_info = {}
     show_fps = True
 
     # cap = cv2.VideoCapture(0)
@@ -66,21 +65,25 @@ def main():
             # results = np.array(results, dtype=float)
             detections = track(roi, np.array(results, dtype=float))
             for d in detections:
-                if d.rect.width * d.rect.height >= 30000:
-                    if tracking_info is None or tracking_info['id'] != d.tracker_id:
-                        tracking_info = {'id':d.tracker_id, 'waiting':False, 'done':False, 'calls':MAX_CALL}
+                if d.tracker_id is not None and d.rect.width * d.rect.height >= 30000:
+                    tracking = tracking_info.get(d.tracker_id)
+                    if tracking is None:
+                        tracking = {'waiting':False, 'done':False, 'calls':MAX_CALL, 'info':''}
+                        tracking_info[d.tracker_id] = tracking
 
-                    if not tracking_info['done'] and not tracking_info['waiting'] and tracking_info['calls'] > 0:
-                        tracking_info['waiting'] = True
-                        tracking_info['calls'] -= 1
-                        threading.Thread(target=capture, args=(roi, d)).start()
+                    if not tracking['done'] and not tracking['waiting'] and tracking['calls'] > 0:
+                        tracking['waiting'] = True
+                        tracking['calls'] -= 1
+                        threading.Thread(target=check_detection, args=(backend_url, roi, d, tracking)).start()
                         # time.sleep(.5)
 
-                    info = '' if not tracking_info['done'] else tracking_info['done']
+                    info = tracking['info']
                     x1, y1, x2, y2 = int(d.rect.x), int(d.rect.y), int(d.rect.max_x), int(d.rect.max_y)
                     cv2.rectangle(roi, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                    cv2.putText(roi, f'{d.tracker_id} {info}', org=(x1+2, y1+17), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
-                        fontScale=.8, color=(0, 255, 0), thickness=2)
+                    cv2.putText(roi, f'{d.tracker_id} {info}', org=(x1+2, y1+17), 
+                                fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
+                                fontScale=.8, color=(0, 255, 0), thickness=2)
+
         cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 2)
         t = time.time() - t
         if show_fps and t != 0:

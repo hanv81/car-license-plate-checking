@@ -1,5 +1,6 @@
 import requests, io, os, time, traceback
 import database as db
+import numpy as np
 from datetime import datetime, timedelta
 from typing import Union
 from concurrent.futures import ThreadPoolExecutor
@@ -115,8 +116,7 @@ async def delete_plate(plate: str, user: User = Depends(get_current_user)):
     if result is None:
         raise internal_server_exception
 
-def log_history(file, username, plate, bbox):
-    image = Image.open(io.BytesIO(file))
+def log_history(image, username, plate, bbox):
     folder = datetime.now().strftime("%Y%m")
     os.makedirs(os.path.join('history', folder), exist_ok=True)
     path = 'history/' + folder + '/' + username + str(time.time_ns()) + '.jpg'
@@ -126,23 +126,30 @@ def log_history(file, username, plate, bbox):
 
 @app.post("/verify")
 async def verify(bbox: str, file: bytes = File(...)):
-    response = requests.post(url=OCR_API_URL, headers=OCR_HEADER, files=dict(upload=file))
-    results = response.json().get('results')
-    msg = 'Unidentified'
     try:
+        x1,y1,x2,y2 = map(int, bbox.split())
+        image = Image.open(io.BytesIO(file))
+        frame = np.array(image)[y1:y2, x1:x2]
+        byte_io = io.BytesIO()
+        Image.fromarray(frame).save(byte_io, format='PNG')
+        response = requests.post(url=OCR_API_URL, headers=OCR_HEADER, files=dict(upload=byte_io.getvalue()))
+        results = response.json().get('results')
+        identified = False
+        msg = 'Unidentified'
         if results is not None and len(results) > 0:
             plate = results[0]['plate']
-            msg = f'{plate}'
+            msg = plate
             username = db.get_user_plate(plate)
             if username:
                 username = username[0]
                 msg = f'{plate} {username}'
-                executor.submit(log_history, file, username, plate, bbox)
+                identified = True
+                executor.submit(log_history, image, username, plate, bbox)
     except:
         traceback.print_exc()
         raise internal_server_exception
 
-    return {'msg':msg}
+    return {'msg':msg, 'identified':identified}
 
 @app.post('/get_history')
 async def get_history(user: User = Depends(get_current_user)):
