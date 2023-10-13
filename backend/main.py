@@ -115,17 +115,17 @@ async def delete_plate(plate: str, user: User = Depends(get_current_user)):
     if result is None:
         raise internal_server_exception
 
-def log_history(file, username, plate):
+def log_history(file, username, plate, bbox):
     image = Image.open(io.BytesIO(file))
     folder = datetime.now().strftime("%Y%m")
     os.makedirs(os.path.join('history', folder), exist_ok=True)
     path = 'history/' + folder + '/' + username + str(time.time_ns()) + '.jpg'
     image.save(path)
     # db.create_history_table()
-    db.add_history(username, plate, path)
+    db.add_history(username, plate, bbox, path)
 
 @app.post("/verify")
-async def verify(file: bytes = File(...)):
+async def verify(bbox: str, file: bytes = File(...)):
     response = requests.post(url=OCR_API_URL, headers=OCR_HEADER, files=dict(upload=file))
     results = response.json().get('results')
     msg = 'Unidentified'
@@ -137,7 +137,7 @@ async def verify(file: bytes = File(...)):
             if username:
                 username = username[0]
                 msg = f'{plate} {username}'
-                executor.submit(log_history, file, username, plate)
+                executor.submit(log_history, file, username, plate, bbox)
     except:
         traceback.print_exc()
         raise internal_server_exception

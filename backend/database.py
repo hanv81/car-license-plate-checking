@@ -115,6 +115,7 @@ def create_history_table():
                 (`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
                 `username` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_general_ci',
                 `plate` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_general_ci',
+                `bbox` VARCHAR(30) NOT NULL COLLATE 'utf8mb4_general_ci',
                 `path` TEXT NOT NULL COLLATE 'utf8mb4_general_ci',
                 PRIMARY KEY (`id`) USING BTREE)
                 COLLATE='utf8mb4_general_ci'
@@ -128,16 +129,17 @@ def create_history_table():
         cursor.close()
         conn.close()
 
-def add_history(username, plate, path):
+def add_history(username, plate, bbox, path):
     conn = connection_pool.get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(f"""INSERT INTO `history_{datetime.now().strftime("%Y%m")}` (`username`, `plate`, `path`)
-                       VALUES ('{username}', '{plate}', '{path}')""")
+        cursor.execute(f"""INSERT INTO `history_{datetime.now().strftime("%Y%m")}`
+                       (`username`, `plate`, `bbox`, `path`)
+                       VALUES ('{username}', '{plate}', '{bbox}', '{path}')""")
         conn.commit()
     except Exception:
-        print('Exception add_history')
-        logging.exception(f'add_history {username} {plate} {path}')
+        traceback.print_exc()
+        logging.exception(f'add_history {username} {plate} {bbox} {path}')
     finally:
         cursor.close()
         conn.close()
@@ -146,7 +148,7 @@ def get_user_history(username):
     conn = connection_pool.get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(f"""SELECT plate, path FROM `history_{datetime.now().strftime("%Y%m")}`
+        cursor.execute(f"""SELECT plate, bbox, path FROM `history_{datetime.now().strftime("%Y%m")}`
                        WHERE `username`='{username}'""")
         result = cursor.fetchall()
         conn.commit()
