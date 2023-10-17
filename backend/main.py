@@ -170,8 +170,10 @@ async def get_config():
     return config
 
 @app.post('/update_config')
-async def update_config(file:str, roi:str):
+async def update_config(file:str, roi:str, obj_size: str):
     if not db.update_config('file', file):
         raise internal_server_exception
     if not db.update_config('roi', roi):
+        raise internal_server_exception
+    if not db.update_config('obj_size', obj_size):
         raise internal_server_exception
