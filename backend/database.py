@@ -115,6 +115,8 @@ def create_history_table():
                 (`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
                 `username` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_general_ci',
                 `plate` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_general_ci',
+                `region` VARCHAR(10) NOT NULL COLLATE 'utf8mb4_general_ci',
+                `type` VARCHAR(10) NOT NULL COLLATE 'utf8mb4_general_ci',
                 `bbox` VARCHAR(30) NOT NULL COLLATE 'utf8mb4_general_ci',
                 `path` TEXT NOT NULL COLLATE 'utf8mb4_general_ci',
                 PRIMARY KEY (`id`) USING BTREE)
@@ -129,13 +131,13 @@ def create_history_table():
         cursor.close()
         conn.close()
 
-def add_history(username, plate, bbox, path):
+def add_history(username, plate, region, type, bbox, path):
     conn = connection_pool.get_connection()
     cursor = conn.cursor()
     try:
         cursor.execute(f"""INSERT INTO `history_{datetime.now().strftime("%Y%m")}`
-                       (`username`, `plate`, `bbox`, `path`)
-                       VALUES ('{username}', '{plate}', '{bbox}', '{path}')""")
+                       (`username`, `plate`, `region`, `type`, `bbox`, `path`)
+                       VALUES ('{username}', '{plate}', '{region}', '{type}', '{bbox}', '{path}')""")
         conn.commit()
     except Exception:
         traceback.print_exc()

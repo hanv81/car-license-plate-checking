@@ -116,13 +116,13 @@ async def delete_plate(plate: str, user: User = Depends(get_current_user)):
     if result is None:
         raise internal_server_exception
 
-def log_history(image, username, plate, bbox):
+def log_history(image, username, plate, region, type, bbox):
     folder = datetime.now().strftime("%Y%m")
     os.makedirs(os.path.join('history', folder), exist_ok=True)
     path = 'history/' + folder + '/' + username + str(time.time_ns()) + '.jpg'
     image.save(path)
     # db.create_history_table()
-    db.add_history(username, plate, bbox, path)
+    db.add_history(username, plate, region, type, bbox, path)
 
 @app.post("/verify")
 async def verify(bbox: str, file: bytes = File(...)):
@@ -138,13 +138,15 @@ async def verify(bbox: str, file: bytes = File(...)):
         msg = 'Unidentified'
         if results is not None and len(results) > 0:
             plate = results[0]['plate']
-            msg = plate
+            region = results[0]['region']['code']
+            type = results[0]['vehicle']['type']
+            msg = f'{plate} {region} {type}'
             username = db.get_user_plate(plate)
             if username:
                 username = username[0]
-                msg = f'{plate} {username}'
+                msg += f' {username}'
                 identified = True
-                executor.submit(log_history, image, username, plate, bbox)
+                executor.submit(log_history, image, username, plate, region, type, bbox)
     except:
         traceback.print_exc()
         raise internal_server_exception
