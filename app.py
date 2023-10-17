@@ -77,6 +77,7 @@ def main():
         if results is not None:
             results = [p for p in results if p[-1] == 2] # car
         if results:
+            roi_api = roi.copy()    # fix frame checking with bbox
             # results = np.array(results, dtype=float)
             detections = track(roi, np.array(results, dtype=float))
             for d in detections:
@@ -89,7 +90,7 @@ def main():
                     if not tracking['done'] and not tracking['waiting'] and tracking['calls'] > 0:
                         tracking['waiting'] = True
                         tracking['calls'] -= 1
-                        threading.Thread(target=check_detection, args=(backend_url, roi, d, tracking)).start()
+                        threading.Thread(target=check_detection, args=(backend_url, roi_api, d, tracking)).start()
                         # time.sleep(.5)
 
                     info = tracking['info']
