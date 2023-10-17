@@ -158,3 +158,20 @@ async def get_history(user: User = Depends(get_current_user)):
         raise internal_server_exception
     
     return history
+
+@app.get('/get_config')
+async def get_config():
+    db_config = db.get_config()
+    config = {}
+    for i in range(len(db_config)):
+        key, value = db_config[i]
+        db_config[i] = {key:value}
+        config[key] = value
+    return config
+
+@app.post('/update_config')
+async def update_config(file:str, roi:str):
+    if not db.update_config('file', file):
+        raise internal_server_exception
+    if not db.update_config('roi', roi):
+        raise internal_server_exception

@@ -160,3 +160,35 @@ def get_user_history(username):
         cursor.close()
         conn.close()
     return result
+
+def get_config():
+    conn = connection_pool.get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"""SELECT `name`,`value` FROM `config`""")
+        result = cursor.fetchall()
+        conn.commit()
+    except:
+        traceback.print_exc()
+        logging.exception('get_config')
+        result = None
+    finally:
+        cursor.close()
+        conn.close()
+    return result
+
+def update_config(name, value):
+    conn = connection_pool.get_connection()
+    cursor = conn.cursor()
+    result = True
+    try:
+        cursor.execute(f"""UPDATE `config` SET `value`='{value}' WHERE `name`='{name}'""")
+        conn.commit()
+    except:
+        traceback.print_exc()
+        logging.exception('update_config')
+        result = False
+    finally:
+        cursor.close()
+        conn.close()
+    return result

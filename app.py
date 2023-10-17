@@ -1,5 +1,6 @@
-import io, cv2, time, requests, threading
+import io, cv2, time, requests, threading, traceback
 import numpy as np
+import screeninfo
 from PIL import Image
 from helper import DamageHelper
 from tracker import track,Detection
@@ -10,7 +11,7 @@ MAX_CALL = 3
 def call_backend_api(url, frame, bbox):
     byte_io = io.BytesIO()
     Image.fromarray(frame).save(byte_io, format='PNG')
-    response = requests.post(url=url, files=dict(file=byte_io.getvalue()), params={'bbox':bbox})
+    response = requests.post(url=url + '/verify', files=dict(file=byte_io.getvalue()), params={'bbox':bbox})
     byte_io.close()
     return response
 
@@ -23,20 +24,33 @@ def check_detection(url:str, frame:np.ndarray, d:Detection, tracking:dict):
     if response.json().get('identified'):
         tracking['done'] = True
 
+def get_config_from_backend(url : str):
+    response = requests.get(url + '/get_config')
+    configs = response.json()
+    roi = list(map(int, configs['roi'].split()))
+    obj_size = int(configs['obj_size'])
+    file = configs['file']
+    return roi, obj_size, file
+
 def read_config():
     configs = Properties()
     with open('config.properties', 'rb') as prop:
         configs.load(prop)
-    
-    roi = list(map(int, configs.get('roi').data.split()))
+
     model_path = configs.get('model_path').data
     backend_url = configs.get('backend_url').data
-    video_src = configs.get('video_src').data
-    calibration_path = configs.get('calibration').data
-    return roi, model_path, backend_url, video_src, calibration_path
+    try:
+        roi, obj_size, video_src = get_config_from_backend(backend_url)
+    except:
+        traceback.print_exc()
+        roi = list(map(int, configs.get('roi').data.split()))
+        video_src = configs.get('video_src').data
+        obj_size = int(configs.get('obj_size').data)
+
+    return roi, obj_size, model_path, backend_url, video_src
 
 def main():
-    roi, model_path, backend_url, _, _ = read_config()
+    roi, obj_size, model_path, backend_url, video_src = read_config()
     left, top, right, bottom = roi
     model = DamageHelper(model_path)
 
@@ -47,7 +61,8 @@ def main():
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-    cap = cv2.VideoCapture('video.mp4')
+    screen = screeninfo.get_monitors()[0]
+    cap = cv2.VideoCapture('video/' + video_src)
     while cap.isOpened():
         t = time.time()
         ret, frame = cap.read()
@@ -65,7 +80,7 @@ def main():
             # results = np.array(results, dtype=float)
             detections = track(roi, np.array(results, dtype=float))
             for d in detections:
-                if d.tracker_id is not None and d.rect.width * d.rect.height >= 30000:
+                if d.tracker_id is not None and d.rect.width * d.rect.height >= obj_size:
                     tracking = tracking_info.get(d.tracker_id)
                     if tracking is None:
                         tracking = {'waiting':False, 'done':False, 'calls':MAX_CALL, 'info':''}
@@ -90,7 +105,9 @@ def main():
             # print('FPS:', int(1/t))
             cv2.putText(frame, f'FPS: {int(1/t)}', org=(0, 15), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=.5, color=(0, 0, 255), thickness=2)
+
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        frame = cv2.resize(frame, dsize=(screen.width*9//10, screen.height*9//10))
         cv2.imshow('frame', frame)
 
     cap.release()
