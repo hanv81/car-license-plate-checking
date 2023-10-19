@@ -1,10 +1,9 @@
 import io, cv2, time, requests, threading, traceback
 import numpy as np
+from config import Config
 import screeninfo
 from PIL import Image
-from helper import DamageHelper
-from tracker import track,Detection
-from jproperties import Properties
+from tracker import track, Detection
 
 MAX_CALL = 3
 
@@ -24,35 +23,9 @@ def check_detection(url:str, frame:np.ndarray, d:Detection, tracking:dict):
     if response.json().get('identified'):
         tracking['done'] = True
 
-def get_config_from_backend(url : str):
-    response = requests.get(url + '/get_config')
-    configs = response.json()
-    roi = list(map(int, configs['roi'].split()))
-    obj_size = int(configs['obj_size'])
-    file = configs['file']
-    return roi, obj_size, file
-
-def read_config():
-    configs = Properties()
-    with open('config.properties', 'rb') as prop:
-        configs.load(prop)
-
-    model_path = configs.get('model_path').data
-    backend_url = configs.get('backend_url').data
-    try:
-        roi, obj_size, video_src = get_config_from_backend(backend_url)
-    except:
-        traceback.print_exc()
-        roi = list(map(int, configs.get('roi').data.split()))
-        video_src = configs.get('video_src').data
-        obj_size = int(configs.get('obj_size').data)
-
-    return roi, obj_size, model_path, backend_url, video_src
-
 def main():
-    roi, obj_size, model_path, backend_url, video_src = read_config()
-    left, top, right, bottom = roi
-    model = DamageHelper(model_path)
+    cf = Config()
+    left, top, right, bottom = cf.roi
 
     tracking_info = {}
     show_fps = True
@@ -62,18 +35,20 @@ def main():
     # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
     screen = screeninfo.get_monitors()[0]
-    cap = cv2.VideoCapture('video/' + video_src)
+    cap = cv2.VideoCapture('video/' + cf.video_src)
     while cap.isOpened():
+        cf.run_schedule()
         t = time.time()
         ret, frame = cap.read()
         key = cv2.waitKey(1)
         if key == ord("q") or not ret:
+            cf.stop_schedule()
             break
         elif key == ord('f'):
             show_fps = not show_fps
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         roi = frame[top:bottom, left:right]
-        results = model.process(roi, 416) # detect in ROI only
+        results = cf.model.process(roi, 416) # detect in ROI only
         if results is not None:
             results = [p for p in results if p[-1] == 2] # car
         if results:
@@ -81,7 +56,7 @@ def main():
             # results = np.array(results, dtype=float)
             detections = track(roi, np.array(results, dtype=float))
             for d in detections:
-                if d.tracker_id is not None and d.rect.width * d.rect.height >= obj_size:
+                if d.tracker_id is not None and d.rect.width * d.rect.height >= cf.obj_size:
                     tracking = tracking_info.get(d.tracker_id)
                     if tracking is None:
                         tracking = {'waiting':False, 'done':False, 'calls':MAX_CALL, 'info':''}
@@ -90,7 +65,7 @@ def main():
                     if not tracking['done'] and not tracking['waiting'] and tracking['calls'] > 0:
                         tracking['waiting'] = True
                         tracking['calls'] -= 1
-                        threading.Thread(target=check_detection, args=(backend_url, roi_api, d, tracking)).start()
+                        threading.Thread(target=check_detection, args=(cf.backend_url, roi_api, d, tracking)).start()
                         # time.sleep(.5)
 
                     info = tracking['info']
