@@ -211,3 +211,36 @@ def update_config(name, value):
         cursor.close()
         conn.close()
     return result
+
+def get_list_user():
+    conn = connection_pool.get_connection()
+    cursor = conn.cursor()
+    result = None
+    try:
+        cursor.execute('SELECT * FROM `user` WHERE `user_type` != 0')
+        result = cursor.fetchall()
+        conn.commit()
+    except:
+        traceback.print_exc()
+        logging.exception('get_list_user')
+    finally:
+        cursor.close()
+        conn.close()
+    return result
+
+def get_list_car():
+    conn = connection_pool.get_connection()
+    cursor = conn.cursor()
+    result = None
+    try:
+        cursor.execute("""SELECT `plate`, `user`.`username` FROM `user_plate` INNER JOIN `user`
+                       ON `user`.`username`=`user_plate`.`username`""")
+        result = cursor.fetchall()
+        conn.commit()
+    except:
+        traceback.print_exc()
+        logging.exception('get_list_car')
+    finally:
+        cursor.close()
+        conn.close()
+    return result

@@ -32,6 +32,9 @@ username_existed_exception = HTTPException(status_code=status.HTTP_201_CREATED,
 internal_server_exception = HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                                       detail="Database error",
                                       headers={"WWW-Authenticate": "Bearer"},)
+usertype_not_accept_exception = HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                              detail="User type not acceptable",
+                                              headers={"WWW-Authenticate": "Bearer"},)
 
 class Token(BaseModel):
     access_token: str
@@ -45,6 +48,7 @@ class User(BaseModel):
     username: str
     password: str
     refresh_token: str
+    user_type: int
 
 def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
     to_encode = data.copy()
@@ -71,8 +75,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
     return user
 
-@app.get('/create_user')
-async def create_user(username: str, password: str):
+@app.post('/create_user')
+async def create_user(username: str, password: str, user: User = Depends(get_current_user)):
+    if user[4] != 0:
+        raise usertype_not_accept_exception
     data = {'username':username, 'password':password}
     refresh_token = jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
     if db.create_user(username, pwd_context.hash(password), refresh_token):
@@ -96,7 +102,7 @@ async def login(data: OAuth2PasswordRequestForm = Depends()):
     access_token = create_access_token(data={"sub": data.username},
                                        expires_delta=access_token_expires)
 
-    return {"refresh_token": user[3], "access_token": access_token, "token_type": "bearer"}
+    return {"refresh_token": user[3], "access_token": access_token}
 
 @app.post('/register_plate')
 async def register_plate(plate: str, user: User = Depends(get_current_user)):
@@ -172,10 +178,21 @@ async def get_config():
     return config
 
 @app.post('/update_config')
-async def update_config(file:str, roi:str, obj_size: str):
+async def update_config(file:str, roi:str, obj_size: str, user: User = Depends(get_current_user)):
+    if user[4] != 0:
+        raise usertype_not_accept_exception
     if not db.update_config('file', file):
         raise internal_server_exception
     if not db.update_config('roi', roi):
         raise internal_server_exception
     if not db.update_config('obj_size', obj_size):
         raise internal_server_exception
+
+@app.post('/statistic')
+async def get_statistic(user: User = Depends(get_current_user)):
+    if user[4] != 0:
+        raise usertype_not_accept_exception
+
+    users = db.get_list_user()
+    cars = db.get_list_car()
+    return users, cars
