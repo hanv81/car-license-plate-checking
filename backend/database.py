@@ -58,6 +58,23 @@ def get_user_plate(plate):
         conn.close()
     return result
 
+def get_user_by_plates(plates):
+    conn = connection_pool.get_connection()
+    cursor = conn.cursor()
+    try:
+        str_plates = ','.join(plates)
+        cursor.execute(f"SELECT `username`,`plate` FROM `user_plate` WHERE `plate` IN ({str_plates})")
+        result = cursor.fetchone()
+        conn.commit()
+    except Error:
+        traceback.print_exc()
+        logging.exception(f'get_user_plates {plates}')
+        return None
+    finally:
+        cursor.close()
+        conn.close()
+    return result
+
 def get_user_plates(username):
     conn = connection_pool.get_connection()
     cursor = conn.cursor()
