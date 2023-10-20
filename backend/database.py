@@ -244,3 +244,20 @@ def get_list_car():
         cursor.close()
         conn.close()
     return result
+
+def get_daily_statistic():
+    conn = connection_pool.get_connection()
+    cursor = conn.cursor()
+    result = None
+    try:
+        cursor.execute("""SELECT `type`, DATE(`create_time`), COUNT(`type`)
+                       FROM history_202310 GROUP BY `type`, DATE(`create_time`)""")
+        result = cursor.fetchall()
+        conn.commit()
+    except:
+        traceback.print_exc()
+        logging.exception('get_daily_statistic')
+    finally:
+        cursor.close()
+        conn.close()
+    return result

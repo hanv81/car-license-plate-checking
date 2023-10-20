@@ -195,4 +195,5 @@ async def get_statistic(user: User = Depends(get_current_user)):
 
     users = db.get_list_user()
     cars = db.get_list_car()
-    return users, cars
+    statistic = db.get_daily_statistic()
+    return users, cars, statistic
