@@ -11,8 +11,8 @@ API_URL = 'http://127.0.0.1:8000/'
 def login():
     placeholder = st.empty()
     with placeholder.form("login"):
-        username = st.text_input("Username", 'hanv')
-        password = st.text_input("Password", value='180981', type="password")
+        username = st.text_input("Username", 'admin')
+        password = st.text_input("Password", value='admin', type="password")
         submit = st.form_submit_button("Login")
 
     if submit:
