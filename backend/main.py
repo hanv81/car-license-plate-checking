@@ -1,4 +1,4 @@
-import requests, io, os, time, traceback
+import uvicorn, requests, io, os, time, traceback
 import database as db
 import numpy as np
 from datetime import datetime, timedelta
@@ -197,3 +197,6 @@ async def get_statistic(user: User = Depends(get_current_user)):
     cars = db.get_list_car()
     statistic = db.get_daily_statistic()
     return users, cars, statistic
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
