@@ -15,8 +15,8 @@ class Config:
         self.read_config()
         schedule.every(1).minutes.do(self.read_config)
 
-    def get_config_from_backend(self, url : str):
-        response = requests.get(url + '/get_config')
+    def get_config_from_backend(self):
+        response = requests.get(self.backend_url + '/get_config')
         configs = response.json()
         self.roi = list(map(int, configs['roi'].split()))
         self.obj_size = int(configs['obj_size'])
@@ -37,7 +37,7 @@ class Config:
             self.model = YOLO(self.model_path, task='detect')
 
         try:
-            self.get_config_from_backend(self.backend_url)
+            self.get_config_from_backend()
         except:
             traceback.print_exc()
 
