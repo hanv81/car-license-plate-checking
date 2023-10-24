@@ -48,13 +48,10 @@ def main():
             show_fps = not show_fps
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         roi = frame[top:bottom, left:right]
-        results = cf.model.process(roi, 416) # detect in ROI only
-        if results is not None:
-            results = [p for p in results if p[-1] == 2] # car
+        results = cf.model.predict(roi, imgsz=320, conf=0.5, classes=[2])[0].boxes
         if results:
             roi_api = roi.copy()    # fix frame checking with bbox
-            # results = np.array(results, dtype=float)
-            detections = track(roi, np.array(results, dtype=float))
+            detections = track(roi, np.array(results.data, dtype=float))
             for d in detections:
                 if d.tracker_id is not None and d.rect.width * d.rect.height >= cf.obj_size:
                     tracking = tracking_info.get(d.tracker_id)
@@ -76,14 +73,14 @@ def main():
                                 fontScale=.8, color=(0, 255, 0), thickness=2)
 
         cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 2)
+        frame = cv2.resize(frame, dsize=(screen.width*9//10, screen.height*9//10))
         t = time.time() - t
         if show_fps and t != 0:
             # print('FPS:', int(1/t))
             cv2.putText(frame, f'FPS: {int(1/t)}', org=(0, 15), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
-                        fontScale=.5, color=(0, 0, 255), thickness=2)
+                        fontScale=.5, color=(0, 255, 255), thickness=2)
 
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        frame = cv2.resize(frame, dsize=(screen.width*9//10, screen.height*9//10))
         cv2.imshow('frame', frame)
 
     cap.release()

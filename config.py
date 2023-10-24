@@ -1,7 +1,7 @@
 import schedule, requests, traceback
 from jproperties import Properties
-from helper import DamageHelper
 from dataclasses import dataclass
+from ultralytics import YOLO
 
 @dataclass
 class Config:
@@ -34,7 +34,7 @@ class Config:
         
         if self.model_path != prop.get('model_path').data:
             self.model_path = prop.get('model_path').data
-            self.model = DamageHelper(self.model_path)
+            self.model = YOLO(self.model_path, task='detect')
 
         try:
             self.get_config_from_backend(self.backend_url)
