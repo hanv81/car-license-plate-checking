@@ -133,7 +133,7 @@ def main():
 
         with tab4:
             response = requests.post(API_URL+'statistic', headers=headers)
-            if update_code != HTTPStatus.OK:
+            if response.status_code != HTTPStatus.OK:
                 st.error(response.json()['detail'])
             else:
                 _, cars, statistic = response.json()
