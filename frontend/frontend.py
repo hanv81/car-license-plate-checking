@@ -133,19 +133,22 @@ def main():
 
         with tab4:
             response = requests.post(API_URL+'statistic', headers=headers)
-            _, cars, statistic = response.json()
-            with st.expander('Cars'):
-                cars = pd.DataFrame(cars, columns=['Plate', 'Username'])
-                st.table(cars)
-            with st.expander('Statistic'):
-                statistic = pd.DataFrame(statistic, columns=['Type', 'Date', 'Count'])
-                st.table(statistic)
-            with st.form('Create'):
-                col1, col2 = st.columns(2)
-                with col1:user = st.text_input('Username')
-                with col2:pw = st.text_input('Password', type='password')
-                if st.form_submit_button('Create', use_container_width=True):
-                    create_user(user, pw, headers)
+            if update_code != HTTPStatus.OK:
+                st.error(response.json()['detail'])
+            else:
+                _, cars, statistic = response.json()
+                with st.expander('Cars'):
+                    cars = pd.DataFrame(cars, columns=['Plate', 'Username'])
+                    st.table(cars)
+                with st.expander('Statistic'):
+                    statistic = pd.DataFrame(statistic, columns=['Type', 'Date', 'Count'])
+                    st.table(statistic)
+                with st.form('Create'):
+                    col1, col2 = st.columns(2)
+                    with col1:user = st.text_input('Username')
+                    with col2:pw = st.text_input('Password', type='password')
+                    if st.form_submit_button('Create', use_container_width=True):
+                        create_user(user, pw, headers)
 
 def create_user(username, password, headers):
     response = requests.post(API_URL + 'create_user', headers = headers,
