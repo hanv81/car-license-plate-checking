@@ -50,32 +50,7 @@ def main():
         elif key == ord('b'):
             draw_bbox = not draw_bbox
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        roi = frame[top:bottom, left:right]
-        results = cf.model.predict(roi, imgsz=320, conf=0.5, classes=[2], verbose=False)[0].boxes
-        if results:
-            roi_api = roi.copy()    # fix frame checking with bbox
-            detections = track(roi, np.array(results.data, dtype=float))
-            for d in detections:
-                if d.tracker_id is not None and d.rect.width * d.rect.height >= cf.obj_size:
-                    tracking = tracking_info.get(d.tracker_id)
-                    if tracking is None:
-                        tracking = {'waiting':False, 'done':False, 'calls':MAX_CALL, 'info':''}
-                        tracking_info[d.tracker_id] = tracking
-
-                    if not tracking['done'] and not tracking['waiting'] and tracking['calls'] > 0:
-                        tracking['waiting'] = True
-                        tracking['calls'] -= 1
-                        threading.Thread(target=check_detection, args=(cf.backend_url, roi_api, d, tracking)).start()
-                        # time.sleep(.5)
-
-                    if draw_bbox:
-                        info = tracking['info']
-                        x1, y1, x2, y2 = int(d.rect.x), int(d.rect.y), int(d.rect.max_x), int(d.rect.max_y)
-                        cv2.rectangle(roi, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                        cv2.putText(roi, f'{d.tracker_id} {info}', org=(x1+2, y1+17), 
-                                    fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
-                                    fontScale=.8, color=(0, 255, 0), thickness=2)
-
+        process_roi(frame[top:bottom, left:right], cf, tracking_info, draw_bbox)
         if draw_bbox:
             cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 2)
 
@@ -91,5 +66,31 @@ def main():
 
     cap.release()
     cv2.destroyAllWindows()
+
+def process_roi(roi, cf, tracking_info, draw_bbox):
+    results = cf.model.predict(roi, imgsz=320, conf=0.5, classes=[2], verbose=False)[0].boxes
+    if results:
+        roi_api = roi.copy()    # fix frame checking with bbox
+        detections = track(roi, np.array(results.data, dtype=float))
+        for d in detections:
+            if d.tracker_id is not None and d.rect.width * d.rect.height >= cf.obj_size:
+                tracking = tracking_info.get(d.tracker_id)
+                if tracking is None:
+                    tracking = {'waiting':False, 'done':False, 'calls':MAX_CALL, 'info':''}
+                    tracking_info[d.tracker_id] = tracking
+
+                if not tracking['done'] and not tracking['waiting'] and tracking['calls'] > 0:
+                    tracking['waiting'] = True
+                    tracking['calls'] -= 1
+                    threading.Thread(target=check_detection, args=(cf.backend_url, roi_api, d, tracking)).start()
+                    # time.sleep(.5)
+
+                if draw_bbox:
+                    info = tracking['info']
+                    x1, y1, x2, y2 = int(d.rect.x), int(d.rect.y), int(d.rect.max_x), int(d.rect.max_y)
+                    cv2.rectangle(roi, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                    cv2.putText(roi, f'{d.tracker_id} {info}', org=(x1+2, y1+17), 
+                                fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
+                                fontScale=.8, color=(0, 255, 0), thickness=2)
 
 main()
