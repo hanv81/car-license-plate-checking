@@ -48,7 +48,7 @@ def main():
             show_fps = not show_fps
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         roi = frame[top:bottom, left:right]
-        results = cf.model.predict(roi, imgsz=320, conf=0.5, classes=[2])[0].boxes
+        results = cf.model.predict(roi, imgsz=320, conf=0.5, classes=[2], verbose=False)[0].boxes
         if results:
             roi_api = roi.copy()    # fix frame checking with bbox
             detections = track(roi, np.array(results.data, dtype=float))
