@@ -29,6 +29,7 @@ def main():
 
     tracking_info = {}
     show_fps = True
+    draw_bbox = True
 
     # cap = cv2.VideoCapture(0)
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -46,6 +47,8 @@ def main():
             break
         elif key == ord('f'):
             show_fps = not show_fps
+        elif key == ord('b'):
+            draw_bbox = not draw_bbox
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         roi = frame[top:bottom, left:right]
         results = cf.model.predict(roi, imgsz=320, conf=0.5, classes=[2], verbose=False)[0].boxes
@@ -65,14 +68,17 @@ def main():
                         threading.Thread(target=check_detection, args=(cf.backend_url, roi_api, d, tracking)).start()
                         # time.sleep(.5)
 
-                    info = tracking['info']
-                    x1, y1, x2, y2 = int(d.rect.x), int(d.rect.y), int(d.rect.max_x), int(d.rect.max_y)
-                    cv2.rectangle(roi, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                    cv2.putText(roi, f'{d.tracker_id} {info}', org=(x1+2, y1+17), 
-                                fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
-                                fontScale=.8, color=(0, 255, 0), thickness=2)
+                    if draw_bbox:
+                        info = tracking['info']
+                        x1, y1, x2, y2 = int(d.rect.x), int(d.rect.y), int(d.rect.max_x), int(d.rect.max_y)
+                        cv2.rectangle(roi, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                        cv2.putText(roi, f'{d.tracker_id} {info}', org=(x1+2, y1+17), 
+                                    fontFace = cv2.FONT_HERSHEY_SIMPLEX, 
+                                    fontScale=.8, color=(0, 255, 0), thickness=2)
 
-        cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 2)
+        if draw_bbox:
+            cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 2)
+
         frame = cv2.resize(frame, dsize=(screen.width*9//10, screen.height*9//10))
         t = time.time() - t
         if show_fps and t != 0:
