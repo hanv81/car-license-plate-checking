@@ -53,12 +53,17 @@ def show_plates(headers):
     cols = st.columns(2)
     with cols[0]:
         response = requests.post(url = API_URL + 'get_plates', headers = headers)
-        plates = response.json()
-        plate = st.selectbox('Plates', plates)
-        if st.button('Delete'):
-            response = requests.post(url = API_URL + 'delete_plate', headers = headers, params = {'plate': plate})
-            if response.status_code == HTTPStatus.OK:
-                st.success("Plate deleted")
+        if response.status_code != HTTPStatus.OK:
+            st.error(response)
+        else:
+            plates = response.json()
+            plate = st.selectbox('Plates', plates)
+            if st.button('Delete'):
+                response = requests.post(url = API_URL + 'delete_plate', headers = headers, params = {'plate': plate})
+                if response.status_code == HTTPStatus.OK:
+                    st.success("Plate deleted")
+                else:
+                    st.error(response)
 
     with cols[1]:
         plate = st.text_input('Register plate')
