@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from model.user import User
+from util.session import create_session
+from sqlalchemy.orm import Session
 from service.user_service import get_current_user, authenticate, get_user_plates, register_user_plate, delete_user_plate, get_user_history
 
 user_router = APIRouter(tags=["user"])
 
 @user_router.post('/login')
-async def login(data: OAuth2PasswordRequestForm = Depends()):
-    return authenticate(data)
+async def login(data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(create_session)):
+    return authenticate(data, session)
 
 @user_router.post('/get_plates')
 async def get_plates(user: User = Depends(get_current_user)):

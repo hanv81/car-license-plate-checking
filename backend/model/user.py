@@ -1,16 +1,12 @@
-from pydantic import BaseModel
-from typing import Union
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.ext.declarative import declarative_base
+Base = declarative_base()
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+class User(Base):
+    __tablename__ = 'user'
 
-class TokenData(BaseModel):
-    username: Union[str, None] = None
-
-class User(BaseModel):
-    id: int
-    username: str
-    password: str
-    refresh_token: str
-    user_type: int
+    id: Mapped[int] = mapped_column("id", primary_key=True)
+    username: Mapped[str] = mapped_column("username", primary_key=True)
+    password: Mapped[str] = mapped_column("password", primary_key=True)
+    refresh_token: Mapped[str] = mapped_column("refresh_token", primary_key=True)
+    user_type: Mapped[int] = mapped_column("user_type", primary_key=True)

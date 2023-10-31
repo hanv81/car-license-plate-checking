@@ -4,7 +4,9 @@ from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
-from model.user import TokenData, User
+from model.user import User
+from sqlalchemy.orm import Session
+from util.session import create_session
 import service.database as db
 
 ALGORITHM = "HS256"
@@ -31,29 +33,28 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(create_session)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-        token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = db.get_user(token_data.username)
+    user = db.get_user(username, session)
     if user is None:
         raise credentials_exception
 
-    return User(id=user[0], username=user[1], password=user[2], refresh_token=user[3], user_type=user[4])
+    return User(id=user.id, username=user.username, password=user.password, refresh_token=user.refresh_token, user_type=user.user_type)
 
-def authenticate(data):
-    user = db.get_user(data.username)
+def authenticate(data, session: Session):
+    user = db.get_user(data.username, session)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Username not exist",
                             headers={"WWW-Authenticate": "Bearer"})
 
-    if not pwd_context.verify(data.password, user[2]):
+    if not pwd_context.verify(data.password, user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Wrong password",
                             headers={"WWW-Authenticate": "Bearer"})
@@ -62,7 +63,7 @@ def authenticate(data):
     access_token = create_access_token(data={"sub": data.username},
                                        expires_delta=access_token_expires)
 
-    return {"refresh_token": user[3], "access_token": access_token}
+    return {"refresh_token": user.refresh_token, "access_token": access_token}
 
 def get_user_plates(user: User):
     plates = db.get_user_plates(user.username)

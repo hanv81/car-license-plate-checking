@@ -2,6 +2,8 @@ from mysql.connector import Error
 from mysql.connector import pooling
 from datetime import datetime
 import traceback, logging
+from model.user import User
+from sqlalchemy.orm import Session
 
 connection_pool = pooling.MySQLConnectionPool(pool_name="pynative_pool", pool_size=5,
                                               pool_reset_session=True, host='localhost',
@@ -26,21 +28,8 @@ def create_user(username, password, refresh_token):
     
     return result
 
-def get_user(username):
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(f"SELECT * FROM `user` WHERE `username`='{username}'")
-        result = cursor.fetchone()
-        conn.commit()
-    except Error:
-        traceback.print_exc()
-        logging.exception(f'get_user {username}')
-        return None
-    finally:
-        cursor.close()
-        conn.close()
-    return result
+def get_user(username, session: Session) -> User:
+    return session.query(User).filter(User.username == username).one()
 
 def get_user_plate(plate):
     conn = connection_pool.get_connection()
