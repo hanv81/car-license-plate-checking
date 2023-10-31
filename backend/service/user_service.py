@@ -76,9 +76,10 @@ def register_user_plate(plate: str, user: User, session: Session):
     except:
         raise internal_server_exception
 
-def delete_user_plate(plate: str, user: User):
-    result = db.delete_plate(user.username, plate)
-    if result is None:
+def delete_user_plate(plate: str, user: User, session: Session):
+    try:
+        db.delete_plate(user.username, plate, session)
+    except:
         raise internal_server_exception
 
 def get_user_history(user: User):

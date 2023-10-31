@@ -72,21 +72,10 @@ def register_plate(username, plate, session: Session):
     session.add(Plate(username=username, plate=plate))
     session.commit()
 
-def delete_plate(username, plate):
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    result = True
-    try:
-        cursor.execute(f"""DELETE FROM `user_plate` WHERE `username`='{username}' AND `plate`='{plate}'""")
-        conn.commit()
-    except Error:
-        traceback.print_exc()
-        logging.exception(f'delete_plate {username} {plate}')
-        result = False
-    finally:
-        cursor.close()
-        conn.close()
-    return result
+def delete_plate(username, plate, session: Session):
+    plate = session.query(Plate).filter(Plate.username == username, Plate.plate == plate).one()
+    if plate is not None:
+        session.delete(plate)
 
 def create_history_table():
     conn = connection_pool.get_connection()

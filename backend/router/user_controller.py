@@ -20,8 +20,8 @@ async def register_plate(plate: str, user: User = Depends(get_current_user), ses
     return register_user_plate(plate, user, session)
 
 @user_router.post('/delete_plate')
-async def delete_plate(plate: str, user: User = Depends(get_current_user)):
-    return delete_user_plate(plate, user)
+async def delete_plate(plate: str, user: User = Depends(get_current_user), session: Session = Depends(create_session)):
+    return delete_user_plate(plate, user, session)
 
 @user_router.post('/get_history')
 async def get_history(user: User = Depends(get_current_user)):
