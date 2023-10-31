@@ -4,6 +4,7 @@ from datetime import datetime
 import traceback, logging
 from model.user import User, Plate
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import text
 from typing import List
 
 connection_pool = pooling.MySQLConnectionPool(pool_name="pynative_pool", pool_size=5,
@@ -102,22 +103,11 @@ def add_history(username, plate, region, type, bbox, path):
         cursor.close()
         conn.close()
 
-def get_user_history(username):
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(f"""SELECT plate, bbox, path FROM `history_{datetime.now().strftime("%Y%m")}`
+def get_user_history(username, session: Session):
+    statement = text(f"""SELECT plate, bbox, path FROM `history_{datetime.now().strftime("%Y%m")}`
                        WHERE `username`='{username}'""")
-        result = cursor.fetchall()
-        conn.commit()
-    except:
-        traceback.print_exc()
-        logging.exception(f'get_user_history {username}')
-        result = None
-    finally:
-        cursor.close()
-        conn.close()
-    return result
+    result = session.execute(statement)
+    return result.all()
 
 def get_config():
     conn = connection_pool.get_connection()

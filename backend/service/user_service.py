@@ -82,8 +82,8 @@ def delete_user_plate(plate: str, user: User, session: Session):
     except:
         raise internal_server_exception
 
-def get_user_history(user: User):
-    history = db.get_user_history(user.username)
+def get_user_history(user: User, session: Session):
+    history = db.get_user_history(user.username, session)
     if history is None:
         raise internal_server_exception
     return history
