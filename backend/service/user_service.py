@@ -69,10 +69,12 @@ def get_user_plates(user: User, session: Session):
     plates = db.get_user_plates(user.username, session)
     return [p.plate for p in plates]
 
-def register_user_plate(plate: str, user: User):
-    if db.register_plate(user.username, plate):
+def register_user_plate(plate: str, user: User, session: Session):
+    try:
+        db.register_plate(user.username, plate, session)
         return user
-    raise internal_server_exception
+    except:
+        raise internal_server_exception
 
 def delete_user_plate(plate: str, user: User):
     result = db.delete_plate(user.username, plate)

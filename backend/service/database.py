@@ -68,22 +68,9 @@ def get_user_by_plates(plates):
 def get_user_plates(username, session: Session) -> List[Plate]:
     return session.query(Plate).filter(Plate.username == username).all()
 
-def register_plate(username, plate):
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    result = True
-    try:
-        cursor.execute(f"""INSERT INTO `user_plate` (`username`, `plate`) 
-                       VALUES ('{username}', '{plate}')""")
-        conn.commit()
-    except Error:
-        traceback.print_exc()
-        logging.exception(f'register_plate {username} {plate}')
-        result = False
-    finally:
-        cursor.close()
-        conn.close()
-    return result
+def register_plate(username, plate, session: Session):
+    session.add(Plate(username=username, plate=plate))
+    session.commit()
 
 def delete_plate(username, plate):
     conn = connection_pool.get_connection()

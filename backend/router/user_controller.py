@@ -16,8 +16,8 @@ async def get_plates(user: User = Depends(get_current_user), session: Session = 
     return get_user_plates(user, session)
 
 @user_router.post('/register_plate')
-async def register_plate(plate: str, user: User = Depends(get_current_user)):
-    return register_user_plate(plate, user)
+async def register_plate(plate: str, user: User = Depends(get_current_user), session: Session = Depends(create_session)):
+    return register_user_plate(plate, user, session)
 
 @user_router.post('/delete_plate')
 async def delete_plate(plate: str, user: User = Depends(get_current_user)):
