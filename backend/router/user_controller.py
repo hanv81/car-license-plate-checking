@@ -12,8 +12,8 @@ async def login(data: OAuth2PasswordRequestForm = Depends(), session: Session = 
     return authenticate(data, session)
 
 @user_router.post('/get_plates')
-async def get_plates(user: User = Depends(get_current_user)):
-    return get_user_plates(user)
+async def get_plates(user: User = Depends(get_current_user), session: Session = Depends(create_session)):
+    return get_user_plates(user, session)
 
 @user_router.post('/register_plate')
 async def register_plate(plate: str, user: User = Depends(get_current_user)):

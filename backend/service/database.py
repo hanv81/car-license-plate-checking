@@ -2,8 +2,9 @@ from mysql.connector import Error
 from mysql.connector import pooling
 from datetime import datetime
 import traceback, logging
-from model.user import User
+from model.user import User, Plate
 from sqlalchemy.orm import Session
+from typing import List
 
 connection_pool = pooling.MySQLConnectionPool(pool_name="pynative_pool", pool_size=5,
                                               pool_reset_session=True, host='localhost',
@@ -64,21 +65,8 @@ def get_user_by_plates(plates):
         conn.close()
     return result
 
-def get_user_plates(username):
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(f"SELECT `plate` FROM `user_plate` WHERE `username`='{username}'")
-        result = cursor.fetchall()
-        conn.commit()
-    except Error:
-        traceback.print_exc()
-        logging.exception(f'get_user_plates {username}')
-        return None
-    finally:
-        cursor.close()
-        conn.close()
-    return result
+def get_user_plates(username, session: Session) -> List[Plate]:
+    return session.query(Plate).filter(Plate.username == username).all()
 
 def register_plate(username, plate):
     conn = connection_pool.get_connection()

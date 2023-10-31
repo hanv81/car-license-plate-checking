@@ -65,10 +65,9 @@ def authenticate(data, session: Session):
 
     return {"refresh_token": user.refresh_token, "access_token": access_token}
 
-def get_user_plates(user: User):
-    plates = db.get_user_plates(user.username)
-    plates = [plates[i][0] for i in range(len(plates))]
-    return plates
+def get_user_plates(user: User, session: Session):
+    plates = db.get_user_plates(user.username, session)
+    return [p.plate for p in plates]
 
 def register_user_plate(plate: str, user: User):
     if db.register_plate(user.username, plate):
