@@ -11,23 +11,9 @@ connection_pool = pooling.MySQLConnectionPool(pool_name="pynative_pool", pool_si
                                               database='car-door-plate', user='root', password='180981')
 logging.basicConfig(filename='database.log', encoding='utf-8', level=logging.DEBUG)
 
-def create_user(username, password, refresh_token):
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    result = True
-    try:
-        cursor.execute(f"""INSERT INTO `user` (`username`, `password`, `refresh_token`)
-                       VALUES ('{username}', '{password}', '{refresh_token}')""")
-        conn.commit()
-    except Error:
-        traceback.print_exc()
-        logging.exception(f'create_user {username} {password} {refresh_token}')
-        result = False
-    finally:
-        cursor.close()
-        conn.close()
-    
-    return result
+def create_user(username, password, refresh_token, session: Session):
+    session.add(User(username=username, password=password, refresh_token=refresh_token))
+    session.commit()
 
 def get_user(username, session: Session) -> User:
     return session.query(User).filter(User.username == username).one()

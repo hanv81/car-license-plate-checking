@@ -5,15 +5,15 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'user'
 
-    id: Mapped[int] = mapped_column("id", primary_key=True)
-    username: Mapped[str] = mapped_column("username", primary_key=True)
-    password: Mapped[str] = mapped_column("password", primary_key=True)
-    refresh_token: Mapped[str] = mapped_column("refresh_token", primary_key=True)
-    user_type: Mapped[int] = mapped_column("user_type", primary_key=True)
+    id: Mapped[int] = mapped_column("id", primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column("username", unique=True)
+    password: Mapped[str] = mapped_column("password")
+    refresh_token: Mapped[str] = mapped_column("refresh_token")
+    user_type: Mapped[int] = mapped_column("user_type", default=1)
 
 class Plate(Base):
     __tablename__ = 'user_plate'
 
-    id: Mapped[int] = mapped_column("id", primary_key=True)
-    username: Mapped[str] = mapped_column("username", primary_key=True)
-    plate: Mapped[str] = mapped_column("plate", primary_key=True)
+    id: Mapped[int] = mapped_column("id", primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column("username")
+    plate: Mapped[str] = mapped_column("plate", unique=True)

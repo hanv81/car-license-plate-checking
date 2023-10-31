@@ -8,6 +8,7 @@ from model.user import User
 from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from concurrent.futures import ThreadPoolExecutor
+from sqlalchemy.orm import Session
 
 ALGORITHM = "HS256"
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
@@ -27,14 +28,16 @@ internal_server_exception = HTTPException(status_code=status.HTTP_500_INTERNAL_S
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 executor = ThreadPoolExecutor()
 
-def create_user(username: str, password: str, user: User):
+def create_user(username: str, password: str, user: User, session: Session):
     if user.user_type != 0:
         raise usertype_not_accept_exception
     data = {'username':username, 'password':password}
     refresh_token = jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
-    if db.create_user(username, pwd_context.hash(password), refresh_token):
+    try:
+        db.create_user(username, pwd_context.hash(password), refresh_token, session)
         return data
-    raise username_existed_exception
+    except:
+        raise username_existed_exception
 
 def get_system_config():
     db_config = db.get_config()
