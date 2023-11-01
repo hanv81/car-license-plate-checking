@@ -44,15 +44,12 @@ def get_system_config(user: User, session: Session):
         raise usertype_not_accept_exception
     return db.get_config(session)
 
-def update_system_config(file: str, roi: str, obj_size: str, user: User):
+def update_system_config(file: str, roi: str, obj_size: str, user: User, session: Session):
     if user.user_type != 0:
         raise usertype_not_accept_exception
-    if not db.update_config('file', file):
-        raise internal_server_exception
-    if not db.update_config('roi', roi):
-        raise internal_server_exception
-    if not db.update_config('obj_size', obj_size):
-        raise internal_server_exception
+    db.update_config('file', file, session)
+    db.update_config('roi', roi, session)
+    db.update_config('obj_size', obj_size, session)
 
 def get_system_statistic(user: User, session: Session):
     if user.user_type != 0:

@@ -93,20 +93,14 @@ def get_config(session: Session):
     return session.query(Config).all()
 
 def update_config(name, value, session: Session):
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    result = True
     try:
-        cursor.execute(f"""UPDATE `config` SET `value`='{value}' WHERE `name`='{name}'""")
-        conn.commit()
+        config = session.query(Config).filter(Config.name == name).one()
+        config.value = value
+        session.flush()
+        session.commit
     except:
         traceback.print_exc()
-        logging.exception('update_config')
-        result = False
-    finally:
-        cursor.close()
-        conn.close()
-    return result
+        logging.exception(f'update_config {name} {value}')
 
 def get_list_user(session: Session):
     return session.query(User).filter(User.user_type == 0).all()

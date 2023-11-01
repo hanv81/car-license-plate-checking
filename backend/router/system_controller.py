@@ -16,8 +16,8 @@ async def get_config(user: User = Depends(get_current_user), session: Session = 
     return get_system_config(user, session)
 
 @system_router.post('/update_config')
-async def update_config(file:str, roi:str, obj_size: str, user: User = Depends(get_current_user)):
-    return update_system_config(file, roi, obj_size, user)
+async def update_config(file:str, roi:str, obj_size: str, user: User = Depends(get_current_user), session: Session = Depends(create_session)):
+    return update_system_config(file, roi, obj_size, user, session)
 
 @system_router.post('/statistic')
 async def get_statistic(user: User = Depends(get_current_user), session: Session = Depends(create_session)):
