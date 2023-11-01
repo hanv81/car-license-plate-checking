@@ -75,7 +75,7 @@ def log_history(image, username, plate, region, type, bbox):
     # db.create_history_table()
     db.add_history(username, plate, region, type, bbox, path)
 
-def verify_detection(bbox: str, file: bytes):
+def verify_detection(bbox: str, file: bytes, session: Session):
     try:
         x1,y1,x2,y2 = map(int, bbox.split())
         image = Image.open(io.BytesIO(file))
@@ -91,9 +91,9 @@ def verify_detection(bbox: str, file: bytes):
             region = results[0]['region']['code']
             type = results[0]['vehicle']['type']
             msg = f'{plate} {region} {type}'
-            username = db.get_user_plate(plate)
-            if username:
-                username = username[0]
+            p = db.get_user_plate(plate, session)
+            if p:
+                username = p.username
                 msg += f' {username}'
                 identified = True
                 executor.submit(log_history, image, username, plate, region, type, bbox)

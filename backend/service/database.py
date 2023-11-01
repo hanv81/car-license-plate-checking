@@ -19,21 +19,9 @@ def create_user(username, password, refresh_token, session: Session):
 def get_user(username, session: Session) -> User:
     return session.query(User).filter(User.username == username).one()
 
-def get_user_plate(plate):
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(f"SELECT `username` FROM `user_plate` WHERE `plate`='{plate}'")
-        result = cursor.fetchone()
-        conn.commit()
-    except Error:
-        traceback.print_exc()
-        logging.exception(f'get_user_plate {plate}')
-        return None
-    finally:
-        cursor.close()
-        conn.close()
-    return result
+def get_user_plate(plate, session: Session) -> Plate:
+    result = session.query(Plate).filter(Plate.plate == plate)
+    return result.one() if result.count() > 0 else None
 
 def get_user_by_plates(plates):
     conn = connection_pool.get_connection()
