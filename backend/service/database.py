@@ -52,44 +52,35 @@ def delete_plate(username, plate, session: Session):
     if plate is not None:
         session.delete(plate)
 
-def create_history_table():
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
+def create_history_table(session: Session):
     try:
-        sql = f'''CREATE TABLE IF NOT EXISTS `history_{datetime.now().strftime("%Y%m")}`
+        statement = text(f'''CREATE TABLE IF NOT EXISTS `history_{datetime.now().strftime("%Y%m")}`
                 (`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
                 `username` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_general_ci',
                 `plate` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_general_ci',
                 `region` VARCHAR(10) NOT NULL COLLATE 'utf8mb4_general_ci',
-                `type` VARCHAR(10) NOT NULL COLLATE 'utf8mb4_general_ci',
+                `type` VARCHAR(30) NOT NULL COLLATE 'utf8mb4_general_ci',
                 `bbox` VARCHAR(30) NOT NULL COLLATE 'utf8mb4_general_ci',
                 `path` TEXT NOT NULL COLLATE 'utf8mb4_general_ci',
                 PRIMARY KEY (`id`) USING BTREE)
                 COLLATE='utf8mb4_general_ci'
-                ENGINE=InnoDB;'''
-        cursor.execute(sql)
-        conn.commit()
+                ENGINE=InnoDB;''')
+        session.execute(statement)
+        session.commit()
     except Exception:
         traceback.print_exc()
         logging.exception('create_history_table')
-    finally:
-        cursor.close()
-        conn.close()
 
-def add_history(username, plate, region, type, bbox, path):
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
+def add_history(username, plate, region, type, bbox, path, session: Session):
     try:
-        cursor.execute(f"""INSERT INTO `history_{datetime.now().strftime("%Y%m")}`
-                       (`username`, `plate`, `region`, `type`, `bbox`, `path`)
-                       VALUES ('{username}', '{plate}', '{region}', '{type}', '{bbox}', '{path}')""")
-        conn.commit()
-    except Exception:
+        statement = text(f"""INSERT INTO `history_{datetime.now().strftime("%Y%m")}`
+                        (`username`, `plate`, `region`, `type`, `bbox`, `path`)
+                        VALUES ('{username}', '{plate}', '{region}', '{type}', '{bbox}', '{path}')""")
+        session.execute(statement)
+        session.commit()
+    except:
         traceback.print_exc()
-        logging.exception(f'add_history {username} {plate} {bbox} {path}')
-    finally:
-        cursor.close()
-        conn.close()
+        logging.exception(f'add_history {username} {plate} {region} {type} {bbox} {path}')
 
 def get_user_history(username, session: Session):
     statement = text(f"""SELECT plate, bbox, path FROM `history_{datetime.now().strftime("%Y%m")}`

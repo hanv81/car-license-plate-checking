@@ -24,5 +24,5 @@ async def get_statistic(user: User = Depends(get_current_user)):
     return get_user_statistic(user)
 
 @system_router.post("/verify")
-async def verify(bbox: str, file: bytes = File(...)):
-    return verify_detection(bbox, file)
+async def verify(bbox: str, file: bytes = File(...), session: Session = Depends(create_session)):
+    return verify_detection(bbox, file, session)

@@ -67,13 +67,13 @@ def get_user_statistic(user: User):
     statistic = db.get_daily_statistic()
     return users, cars, statistic
 
-def log_history(image, username, plate, region, type, bbox):
+def log_history(image, username, plate, region, type, bbox, session: Session):
     folder = datetime.now().strftime("%Y%m")
     os.makedirs(os.path.join('history', folder), exist_ok=True)
     path = 'history/' + folder + '/' + username + str(time.time_ns()) + '.jpg'
     image.save(path)
-    # db.create_history_table()
-    db.add_history(username, plate, region, type, bbox, path)
+    db.create_history_table(session)
+    db.add_history(username, plate, region, type, bbox, path, session)
 
 def verify_detection(bbox: str, file: bytes, session: Session):
     try:
@@ -96,7 +96,7 @@ def verify_detection(bbox: str, file: bytes, session: Session):
                 username = p.username
                 msg += f' {username}'
                 identified = True
-                executor.submit(log_history, image, username, plate, region, type, bbox)
+                executor.submit(log_history, image, username, plate, region, type, bbox, session)
     except:
         traceback.print_exc()
         raise internal_server_exception
