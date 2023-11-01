@@ -58,13 +58,13 @@ def update_system_config(file: str, roi: str, obj_size: str, user: User):
     if not db.update_config('obj_size', obj_size):
         raise internal_server_exception
 
-def get_user_statistic(user: User):
+def get_system_statistic(user: User, session: Session):
     if user.user_type != 0:
         raise usertype_not_accept_exception
 
-    users = db.get_list_user()
-    cars = db.get_list_car()
-    statistic = db.get_daily_statistic()
+    users = db.get_list_user(session)
+    cars = db.get_list_car(session)
+    statistic = db.get_daily_statistic(session)
     return users, cars, statistic
 
 def log_history(image, username, plate, region, type, bbox, session: Session):

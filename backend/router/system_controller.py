@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, File
 from model.user import User
 from service.user_service import get_current_user
-from service.system_service import create_user, get_system_config, update_system_config, get_user_statistic, verify_detection
+from service.system_service import create_user, get_system_config, update_system_config, get_system_statistic, verify_detection
 from util.session import create_session
 from sqlalchemy.orm import Session
 
@@ -20,8 +20,8 @@ async def update_config(file:str, roi:str, obj_size: str, user: User = Depends(g
     return update_system_config(file, roi, obj_size, user)
 
 @system_router.post('/statistic')
-async def get_statistic(user: User = Depends(get_current_user)):
-    return get_user_statistic(user)
+async def get_statistic(user: User = Depends(get_current_user), session: Session = Depends(create_session)):
+    return get_system_statistic(user, session)
 
 @system_router.post("/verify")
 async def verify(bbox: str, file: bytes = File(...), session: Session = Depends(create_session)):

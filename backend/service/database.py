@@ -62,6 +62,7 @@ def create_history_table(session: Session):
                 `type` VARCHAR(30) NOT NULL COLLATE 'utf8mb4_general_ci',
                 `bbox` VARCHAR(30) NOT NULL COLLATE 'utf8mb4_general_ci',
                 `path` TEXT NOT NULL COLLATE 'utf8mb4_general_ci',
+                `create_time` TIMESTAMP NOT NULL DEFAULT (now()),
                 PRIMARY KEY (`id`) USING BTREE)
                 COLLATE='utf8mb4_general_ci'
                 ENGINE=InnoDB;''')
@@ -120,52 +121,15 @@ def update_config(name, value):
         conn.close()
     return result
 
-def get_list_user():
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    result = None
-    try:
-        cursor.execute('SELECT * FROM `user` WHERE `user_type` != 0')
-        result = cursor.fetchall()
-        conn.commit()
-    except:
-        traceback.print_exc()
-        logging.exception('get_list_user')
-    finally:
-        cursor.close()
-        conn.close()
-    return result
+def get_list_user(session: Session):
+    return session.query(User).filter(User.user_type == 0).all()
 
-def get_list_car():
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    result = None
-    try:
-        cursor.execute("""SELECT `plate`, `user`.`username` FROM `user_plate` INNER JOIN `user`
-                       ON `user`.`username`=`user_plate`.`username`""")
-        result = cursor.fetchall()
-        conn.commit()
-    except:
-        traceback.print_exc()
-        logging.exception('get_list_car')
-    finally:
-        cursor.close()
-        conn.close()
-    return result
+def get_list_car(session: Session):
+    cars = session.query(Plate).join(User, User.username == Plate.username).all()
+    return [(c.plate, c.username) for c in cars]
 
-def get_daily_statistic():
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    result = None
-    try:
-        cursor.execute("""SELECT `type`, DATE(`create_time`), COUNT(`type`)
-                       FROM history_202310 GROUP BY `type`, DATE(`create_time`)""")
-        result = cursor.fetchall()
-        conn.commit()
-    except:
-        traceback.print_exc()
-        logging.exception('get_daily_statistic')
-    finally:
-        cursor.close()
-        conn.close()
-    return result
+def get_daily_statistic(session: Session):
+    statement = text(f"""SELECT `type`, DATE(`create_time`), COUNT(`type`)
+                       FROM `history_{datetime.now().strftime("%Y%m")}` GROUP BY `type`, DATE(`create_time`)""")
+    result = session.execute(statement)
+    return [tuple(row) for row in result.all()]
