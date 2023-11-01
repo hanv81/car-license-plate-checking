@@ -17,3 +17,10 @@ class Plate(Base):
     id: Mapped[int] = mapped_column("id", primary_key=True, autoincrement=True)
     username: Mapped[str] = mapped_column("username")
     plate: Mapped[str] = mapped_column("plate", unique=True)
+
+class Config(Base):
+    __tablename__ = 'config'
+
+    id: Mapped[int] = mapped_column("id", primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column("name", unique=True)
+    value: Mapped[str] = mapped_column("value")

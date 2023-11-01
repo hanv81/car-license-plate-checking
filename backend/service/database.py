@@ -2,7 +2,7 @@ from mysql.connector import Error
 from mysql.connector import pooling
 from datetime import datetime
 import traceback, logging
-from model.user import User, Plate
+from model.user import User, Plate, Config
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 from typing import List
@@ -89,23 +89,10 @@ def get_user_history(username, session: Session):
     result = session.execute(statement)
     return result.all()
 
-def get_config():
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(f"""SELECT `name`,`value` FROM `config`""")
-        result = cursor.fetchall()
-        conn.commit()
-    except:
-        traceback.print_exc()
-        logging.exception('get_config')
-        result = None
-    finally:
-        cursor.close()
-        conn.close()
-    return result
+def get_config(session: Session):
+    return session.query(Config).all()
 
-def update_config(name, value):
+def update_config(name, value, session: Session):
     conn = connection_pool.get_connection()
     cursor = conn.cursor()
     result = True

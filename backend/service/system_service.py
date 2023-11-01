@@ -39,14 +39,10 @@ def create_user(username: str, password: str, user: User, session: Session):
     except:
         raise username_existed_exception
 
-def get_system_config():
-    db_config = db.get_config()
-    config = {}
-    for i in range(len(db_config)):
-        key, value = db_config[i]
-        db_config[i] = {key:value}
-        config[key] = value
-    return config
+def get_system_config(user: User, session: Session):
+    if user.user_type != 0:
+        raise usertype_not_accept_exception
+    return db.get_config(session)
 
 def update_system_config(file: str, roi: str, obj_size: str, user: User):
     if user.user_type != 0:
