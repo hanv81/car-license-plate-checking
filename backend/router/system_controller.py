@@ -12,8 +12,8 @@ async def register(username: str, password: str, user: User = Depends(get_curren
     return create_user(username, password, user, session)
 
 @system_router.get('/get_config')
-async def get_config(user: User = Depends(get_current_user), session: Session = Depends(create_session)):
-    return get_system_config(user, session)
+async def get_config(session: Session = Depends(create_session)):
+    return get_system_config(session)
 
 @system_router.post('/update_config')
 async def update_config(file:str, roi:str, obj_size: str, user: User = Depends(get_current_user), session: Session = Depends(create_session)):

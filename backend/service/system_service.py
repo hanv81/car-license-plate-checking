@@ -39,9 +39,7 @@ def create_user(username: str, password: str, user: User, session: Session):
     except:
         raise username_existed_exception
 
-def get_system_config(user: User, session: Session):
-    if user.user_type != 0:
-        raise usertype_not_accept_exception
+def get_system_config(session: Session):
     return db.get_config(session)
 
 def update_system_config(file: str, roi: str, obj_size: str, user: User, session: Session):
