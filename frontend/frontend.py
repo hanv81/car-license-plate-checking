@@ -25,7 +25,7 @@ def login():
                 st.session_state['access_token'] = response.json()['access_token']
                 st.session_state['username'] = username
             else:
-                st.error('Login fail: ' + response.json()['detail'])
+                st.error(response)
     return username
 
 def main():
@@ -71,12 +71,16 @@ def show_plates(headers):
             response = requests.post(url = API_URL + 'register_plate', headers = headers, params = {'plate': plate})
             if response.status_code == HTTPStatus.OK:
                 st.success("Plate registered")
+            else:
+                st.error(response)
 
 def show_history(username, headers):
     response = requests.post(url = API_URL + 'get_history', headers = headers)
     if st.button('Refresh'):
         response = requests.post(url = API_URL + 'get_history', headers = headers)
-    if response.status_code == HTTPStatus.OK:
+    if response.status_code != HTTPStatus.OK:
+        st.error(response)
+    else:
         history = response.json()
         for h in history:
             # st.write(h)
@@ -88,17 +92,15 @@ def show_history(username, headers):
             img = np.array(Image.open('backend/' + h[2]))
             cv2.rectangle(img, (int(left), int(top)), (int(right), int(bottom)), (255, 0, 0), 2)
             st.image(img, h[0] + ' - ' + str(dt_object))
-    else:
-        st.write(response.json())
 
 def show_config(headers):
     response = requests.get(url = API_URL + 'get_config', headers = headers)
     if response.status_code != HTTPStatus.OK:
-        st.error(response.json()['detail'])
+        st.error(response)
     else:
         configs = response.json()
         with st.expander('Config', True):
-            roi = list(map(int, configs['roi'].split()))
+            roi = list(map(int, configs[0]['value'].split()))
             cols = st.columns(5)
             with cols[0]:
                 left = st.number_input('Left', value=roi[0])
@@ -109,7 +111,7 @@ def show_config(headers):
             with cols[3]:
                 bottom = st.number_input('Bottom', value=roi[3])
             with cols[4]:
-                obj_size = st.number_input('Object size', value=int(configs['obj_size']))
+                obj_size = st.number_input('Object size', value=int(configs[1]['value']))
             
             col1, col2 = st.columns(2)
             with col1:file = st.selectbox('File', os.listdir('video'))
@@ -141,7 +143,7 @@ def show_config(headers):
                 if update_code == HTTPStatus.OK:
                     st.success("Config updated") 
                 else:
-                    st.error(response.json()['detail'])
+                    st.error(response)
 
             with cols[1]:
                 if st.button('Start', use_container_width=True):
@@ -160,7 +162,7 @@ def start_app():
 def show_statistic(headers):
     response = requests.post(API_URL + 'statistic', headers=headers)
     if response.status_code != HTTPStatus.OK:
-        st.error(response.json()['detail'])
+        st.error(response)
     else:
         _, cars, statistic = response.json()
         with st.expander('Cars'):
@@ -178,6 +180,6 @@ def show_statistic(headers):
                 if response.status_code == HTTPStatus.OK:
                     st.success('User created')
                 else:
-                    st.error(response.json())
+                    st.error(response)
 
 main()
