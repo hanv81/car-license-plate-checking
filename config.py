@@ -18,9 +18,9 @@ class Config:
     def get_config_from_backend(self):
         response = requests.get(self.backend_url + '/get_config')
         configs = response.json()
-        self.roi = list(map(int, configs['roi'].split()))
-        self.obj_size = int(configs['obj_size'])
-        self.video_src = configs['file']
+        self.roi = list(map(int, configs[0]['value'].split()))
+        self.obj_size = int(configs[1]['value'])
+        self.video_src = configs[2]['value']
 
     def read_config(self):
         prop = Properties()
