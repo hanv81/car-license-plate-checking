@@ -2,11 +2,11 @@ from typing import Iterator
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from util import config
 
-
-# create session factory to generate new database sessions
+_, _, dburl = config.read_env()
 SessionFactory = sessionmaker(
-    bind=create_engine('mysql://root:180981@localhost:3306/car-door-plate', echo=True),
+    bind=create_engine(dburl, echo=True),
     autocommit=False,
     autoflush=False,
     expire_on_commit=False,
