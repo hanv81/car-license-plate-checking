@@ -1,5 +1,3 @@
-from mysql.connector import Error
-from mysql.connector import pooling
 from datetime import datetime
 import traceback, logging
 from model.user import User, Plate, Config
@@ -7,9 +5,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 from typing import List
 
-connection_pool = pooling.MySQLConnectionPool(pool_name="pynative_pool", pool_size=5,
-                                              pool_reset_session=True, host='localhost',
-                                              database='car-door-plate', user='root', password='180981')
 logging.basicConfig(filename='database.log', encoding='utf-8', level=logging.DEBUG)
 
 def create_user(username, password, refresh_token, session: Session):
@@ -23,22 +18,8 @@ def get_user_plate(plate, session: Session) -> Plate:
     result = session.query(Plate).filter(Plate.plate == plate)
     return result.one() if result.count() > 0 else None
 
-def get_user_by_plates(plates):
-    conn = connection_pool.get_connection()
-    cursor = conn.cursor()
-    try:
-        str_plates = ','.join(plates)
-        cursor.execute(f"SELECT `username`,`plate` FROM `user_plate` WHERE `plate` IN ({str_plates})")
-        result = cursor.fetchone()
-        conn.commit()
-    except Error:
-        traceback.print_exc()
-        logging.exception(f'get_user_plates {plates}')
-        return None
-    finally:
-        cursor.close()
-        conn.close()
-    return result
+def get_user_by_plates(plates, session: Session):
+    return session.query(Plate).filter(Plate.plate == plates).all()
 
 def get_user_plates(username, session: Session) -> List[Plate]:
     return session.query(Plate).filter(Plate.username == username).all()
