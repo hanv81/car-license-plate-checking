@@ -44,6 +44,7 @@ def main():
     cv2.setMouseCallback(winname, mouse_callback)
 
     cap = cv2.VideoCapture('video/' + cf.video_src)
+    frame_size = None
     while cap.isOpened():
         left, top, right, bottom = cf.roi
         cf.run_schedule()
@@ -64,8 +65,18 @@ def main():
         if draw_bbox:
             cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 2)
 
+        if key == ord("-") or key == ord('+'):
+            resize = False
+            if frame_size is None:
+                h,w,_ = frame.shape
+                frame_size = w,h
+            w,h = frame_size
+            frame_size = (int(w*.9), int(h*.9)) if key == ord('-') else (int(w*1.1), int(h*1.1))
+
         if resize:
             frame = cv2.resize(frame, dsize=(screen.width*9//10, screen.height*9//10))
+        elif frame_size:
+            frame = cv2.resize(frame, dsize=frame_size)
 
         t = time.time() - t
         if show_fps and t != 0:
