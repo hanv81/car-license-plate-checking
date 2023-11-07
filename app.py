@@ -31,14 +31,21 @@ def main():
     show_fps = True
     draw_bbox = True
     resize = True
-
-    # cap = cv2.VideoCapture(0)
-    # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-
     screen = screeninfo.get_monitors()[0]
+    
+    winname = 'Frame'
+    cv2.namedWindow(winname)
+    def mouse_callback(event, x, y, flags, param):
+        left, top, right, bottom = cf.roi
+        if event == cv2.EVENT_LBUTTONUP:
+            d1 = np.linalg.norm([[x-left, y-top]])
+            d2 = np.linalg.norm([[x-right, y-bottom]])
+            cf.roi = [x , y, right, bottom] if d1 < d2 else [left, top, x, y]
+    cv2.setMouseCallback(winname, mouse_callback)
+
     cap = cv2.VideoCapture('video/' + cf.video_src)
     while cap.isOpened():
+        left, top, right, bottom = cf.roi
         cf.run_schedule()
         t = time.time()
         ret, frame = cap.read()
@@ -66,7 +73,7 @@ def main():
             cv2.putText(frame, f'FPS: {int(1/t)}', org=(0, 15), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=.5, color=(0, 255, 255), thickness=2)
 
-        cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+        cv2.imshow(winname, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
 
     cap.release()
     cv2.destroyAllWindows()
