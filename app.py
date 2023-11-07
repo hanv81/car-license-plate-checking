@@ -1,4 +1,4 @@
-import io, cv2, time, requests, threading, traceback
+import io, cv2, time, requests, threading
 import numpy as np
 from config import Config
 import screeninfo
@@ -30,6 +30,7 @@ def main():
     tracking_info = {}
     show_fps = True
     draw_bbox = True
+    resize = True
 
     # cap = cv2.VideoCapture(0)
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -49,20 +50,23 @@ def main():
             show_fps = not show_fps
         elif key == ord('b'):
             draw_bbox = not draw_bbox
+        elif key == ord('r'):
+            resize = not resize
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         process_roi(frame[top:bottom, left:right], cf, tracking_info, draw_bbox)
         if draw_bbox:
             cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 2)
 
-        frame = cv2.resize(frame, dsize=(screen.width*9//10, screen.height*9//10))
+        if resize:
+            frame = cv2.resize(frame, dsize=(screen.width*9//10, screen.height*9//10))
+
         t = time.time() - t
         if show_fps and t != 0:
             # print('FPS:', int(1/t))
             cv2.putText(frame, f'FPS: {int(1/t)}', org=(0, 15), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=.5, color=(0, 255, 255), thickness=2)
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        cv2.imshow('frame', frame)
+        cv2.imshow('frame', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
 
     cap.release()
     cv2.destroyAllWindows()
