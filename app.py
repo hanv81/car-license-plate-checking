@@ -31,6 +31,7 @@ def main():
     show_fps = True
     draw_bbox = True
     resize = True
+    frame_size = None
     screen = screeninfo.get_monitors()[0]
     
     winname = 'Frame'
@@ -44,7 +45,6 @@ def main():
     cv2.setMouseCallback(winname, mouse_callback)
 
     cap = cv2.VideoCapture('video/' + cf.video_src)
-    frame_size = None
     while cap.isOpened():
         left, top, right, bottom = cf.roi
         cf.run_schedule()
@@ -75,6 +75,7 @@ def main():
 
         if resize:
             frame = cv2.resize(frame, dsize=(screen.width*9//10, screen.height*9//10))
+            frame_size = None
         elif frame_size:
             frame = cv2.resize(frame, dsize=frame_size)
 
