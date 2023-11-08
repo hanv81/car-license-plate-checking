@@ -91,7 +91,7 @@ def get_list_car(session: Session):
     return [(c.plate, c.username) for c in cars]
 
 def get_daily_statistic(session: Session):
-    statement = text(f"""SELECT `type`, DATE(`create_time`), COUNT(`type`)
-                       FROM `history_{datetime.now().strftime("%Y%m")}` GROUP BY `type`, DATE(`create_time`)""")
+    statement = text(f"""SELECT type, DATE(create_time), COUNT(type)
+                       FROM history_{datetime.now().strftime("%Y%m")} GROUP BY type, DATE(create_time)""")
     result = session.execute(statement)
     return [tuple(row) for row in result.all()]
