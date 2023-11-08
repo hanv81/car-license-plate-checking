@@ -35,18 +35,15 @@ def delete_plate(username, plate, session: Session):
 
 def create_history_table(session: Session):
     try:
-        statement = text(f'''CREATE TABLE IF NOT EXISTS `history_{datetime.now().strftime("%Y%m")}`
-                (`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-                `username` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_general_ci',
-                `plate` VARCHAR(20) NOT NULL COLLATE 'utf8mb4_general_ci',
-                `region` VARCHAR(10) NOT NULL COLLATE 'utf8mb4_general_ci',
-                `type` VARCHAR(30) NOT NULL COLLATE 'utf8mb4_general_ci',
-                `bbox` VARCHAR(30) NOT NULL COLLATE 'utf8mb4_general_ci',
-                `path` TEXT NOT NULL COLLATE 'utf8mb4_general_ci',
-                `create_time` TIMESTAMP NOT NULL DEFAULT (now()),
-                PRIMARY KEY (`id`) USING BTREE)
-                COLLATE='utf8mb4_general_ci'
-                ENGINE=InnoDB;''')
+        statement = text(f'''CREATE TABLE IF NOT EXISTS history_{datetime.now().strftime("%Y%m")} (
+                         id SERIAL PRIMARY KEY,
+                         username VARCHAR(20) NOT NULL,
+                         plate VARCHAR(20) NOT NULL,
+                         region VARCHAR(10) NOT NULL,
+                         type VARCHAR(30) NOT NULL,
+                         bbox VARCHAR(30) NOT NULL,
+                         path TEXT NOT NULL,
+                         create_time TIMESTAMP NOT NULL DEFAULT (now()))''')
         session.execute(statement)
         session.commit()
     except Exception:
@@ -55,8 +52,8 @@ def create_history_table(session: Session):
 
 def add_history(username, plate, region, type, bbox, path, session: Session):
     try:
-        statement = text(f"""INSERT INTO `history_{datetime.now().strftime("%Y%m")}`
-                        (`username`, `plate`, `region`, `type`, `bbox`, `path`)
+        statement = text(f"""INSERT INTO history_{datetime.now().strftime("%Y%m")}
+                        (username, plate, region, type, bbox, path)
                         VALUES ('{username}', '{plate}', '{region}', '{type}', '{bbox}', '{path}')""")
         session.execute(statement)
         session.commit()
@@ -65,10 +62,14 @@ def add_history(username, plate, region, type, bbox, path, session: Session):
         logging.exception(f'add_history {username} {plate} {region} {type} {bbox} {path}')
 
 def get_user_history(username, session: Session):
-    statement = text(f"""SELECT plate, bbox, path FROM `history_{datetime.now().strftime("%Y%m")}`
-                       WHERE `username`='{username}'""")
-    result = session.execute(statement)
-    return result.all()
+    try:
+        statement = text(f"""SELECT plate, bbox, path FROM history_{datetime.now().strftime("%Y%m")}
+                        WHERE username='{username}'""")
+        result = session.execute(statement)
+        return result.all()
+    except:
+        traceback.print_exc()
+        logging.exception(f'get_user_history {username}')
 
 def get_config(session: Session):
     return session.query(Config).all()
