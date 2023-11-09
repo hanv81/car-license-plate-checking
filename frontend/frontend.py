@@ -100,7 +100,7 @@ def show_config(headers):
     else:
         configs = response.json()
         with st.expander('Config', True):
-            roi = list(map(int, configs[0]['value'].split()))
+            roi = list(map(int, configs['roi'].split()))
             cols = st.columns(5)
             with cols[0]:
                 left = st.number_input('Left', value=roi[0])
@@ -111,7 +111,7 @@ def show_config(headers):
             with cols[3]:
                 bottom = st.number_input('Bottom', value=roi[3])
             with cols[4]:
-                obj_size = st.number_input('Object size', value=int(configs[1]['value']))
+                obj_size = st.number_input('Object size', value=int(configs['obj_size']))
             
             col1, col2 = st.columns(2)
             with col1:file = st.selectbox('File', os.listdir('video'))
