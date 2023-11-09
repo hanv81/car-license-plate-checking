@@ -40,7 +40,11 @@ def create_user(username: str, password: str, user: User, session: Session):
         raise username_existed_exception
 
 def get_system_config(session: Session):
-    return db.get_config(session)
+    config = {}
+    configs = db.get_config(session)
+    for cf in configs:
+        config[cf.name] = cf.value
+    return config
 
 def update_system_config(file: str, roi: str, obj_size: str, user: User, session: Session):
     if user.user_type != 0:
