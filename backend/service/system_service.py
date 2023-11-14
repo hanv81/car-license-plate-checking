@@ -78,10 +78,12 @@ def verify_detection(bbox: str, file: bytes, session: Session):
         byte_io = io.BytesIO()
         Image.fromarray(frame).save(byte_io, format='PNG')
         response = requests.post(url=OCR_API_URL, headers=OCR_HEADER, files=dict(upload=byte_io.getvalue()))
-        results = response.json().get('results')
         identified = False
         msg = 'Unidentified'
-        if results is not None and len(results) > 0:
+        if response.status_code != status.HTTP_201_CREATED:
+            msg = response.json()['detail']
+        else:
+            results = response.json()['results']
             plate = results[0]['plate']
             region = results[0]['region']['code']
             type = results[0]['vehicle']['type']
