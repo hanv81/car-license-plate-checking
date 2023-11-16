@@ -14,6 +14,7 @@ ALGORITHM = "HS256"
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 OCR_API_URL = 'https://api.platerecognizer.com/v1/plate-reader/'
 OCR_HEADER = {'Authorization': 'Token 45f3172a25b6ea562e6174ac2475b7ca26b8e2fc'}
+# OCR_HEADER = {'Authorization': 'Token 579df3fbc1fb5f65459d9ce5ef6c24e9e1943bf3'}
 
 usertype_not_accept_exception = HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                                               detail="User type not acceptable",
@@ -22,7 +23,7 @@ username_existed_exception = HTTPException(status_code=status.HTTP_201_CREATED,
                                            detail="Username exist",
                                            headers={"WWW-Authenticate": "Bearer"},)
 internal_server_exception = HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                                          detail="Database error",
+                                          detail="Server error",
                                           headers={"WWW-Authenticate": "Bearer"},)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -78,24 +79,31 @@ def verify_detection(bbox: str, file: bytes, session: Session):
         byte_io = io.BytesIO()
         Image.fromarray(frame).save(byte_io, format='PNG')
         response = requests.post(url=OCR_API_URL, headers=OCR_HEADER, files=dict(upload=byte_io.getvalue()))
-        identified = False
-        msg = 'Unidentified'
-        if response.status_code != status.HTTP_201_CREATED:
-            msg = response.json()['detail']
-        else:
-            results = response.json()['results']
-            plate = results[0]['plate']
-            region = results[0]['region']['code']
-            type = results[0]['vehicle']['type']
-            msg = f'{plate} {region} {type}'
-            p = db.get_user_plate(plate, session)
-            if p:
-                username = p.username
-                msg += f' {username}'
-                identified = True
-                executor.submit(log_history, image, username, plate, region, type, bbox, session)
+        msg, identified = process_ocr_response(response, image, bbox, session)
     except:
         traceback.print_exc()
         raise internal_server_exception
 
     return {'msg':msg, 'identified':identified}
+
+def process_ocr_response(response, image, bbox, session):
+    identified = False
+    if response.status_code != status.HTTP_201_CREATED:
+        return response.json()['detail'], identified
+
+    results = response.json()['results']
+    if results is None or len(results) == 0:
+        return 'Unidentified', identified
+
+    plate = results[0]['plate']
+    region = results[0]['region']['code']
+    type = results[0]['vehicle']['type']
+    msg = f'{plate} {region} {type}'
+    p = db.get_user_plate(plate, session)
+    if p:
+        username = p.username
+        msg += f' {username}'
+        identified = True
+        executor.submit(log_history, image, username, plate, region, type, bbox, session)
+
+    return msg, identified
