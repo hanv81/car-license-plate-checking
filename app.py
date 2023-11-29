@@ -85,13 +85,14 @@ def main():
             cv2.putText(frame, f'FPS: {int(1/t)}', org=(0, 15), fontFace = cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=.5, color=(0, 255, 255), thickness=2)
 
-        cv2.imshow(winname, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        cv2.imshow(winname, frame)
 
     cap.release()
     cv2.destroyAllWindows()
 
 def process_roi(roi, cf, tracking_info, draw_bbox):
-    results = cf.model.predict(roi, imgsz=320, conf=0.5, classes=[2], verbose=False)[0].boxes
+    results = cf.model(roi, imgsz=320, conf=0.5, classes=[2], verbose=False)[0].boxes
     if results:
         roi_api = roi.copy()    # fix frame checking with bbox
         detections = track(roi, np.array(results.data, dtype=float))
