@@ -1,12 +1,9 @@
 import schedule, requests, traceback
 from jproperties import Properties
 from dataclasses import dataclass
-from ultralytics import YOLO
 
 @dataclass
 class Config:
-    model = None
-    model_path = None
     backend_url = None
     video_src = None
     roi = None
@@ -31,10 +28,6 @@ class Config:
         self.video_src = prop.get('video_src').data
         self.roi = list(map(int, prop.get('roi').data.split()))
         self.obj_size = int(prop.get('obj_size').data)
-        
-        if self.model_path != prop.get('model_path').data:
-            self.model_path = prop.get('model_path').data
-            self.model = YOLO(self.model_path, task='detect')
 
         try:
             self.get_config_from_backend()

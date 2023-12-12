@@ -4,6 +4,7 @@ from config import Config
 import screeninfo
 from PIL import Image
 from tracker import track, Detection
+from model import CustomModel
 
 MAX_CALL = 3
 
@@ -24,6 +25,7 @@ def check_detection(url:str, frame:np.ndarray, d:Detection, tracking:dict):
         tracking['done'] = True
 
 def main():
+    model = CustomModel()
     cf = Config()
     left, top, right, bottom = cf.roi
 
@@ -61,7 +63,7 @@ def main():
         elif key == ord('r'):
             resize = not resize
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        process_roi(frame[top:bottom, left:right], cf, tracking_info, draw_bbox)
+        process_roi(frame[top:bottom, left:right], model, cf, tracking_info, draw_bbox)
         if draw_bbox:
             cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 2)
 
@@ -91,11 +93,11 @@ def main():
     cap.release()
     cv2.destroyAllWindows()
 
-def process_roi(roi, cf, tracking_info, draw_bbox):
-    results = cf.model(roi, imgsz=320, conf=0.5, classes=[2], verbose=False)[0].boxes
-    if results:
+def process_roi(roi, model, cf, tracking_info, draw_bbox):
+    preds = model(roi, classes=[2])
+    if len(preds) > 0:
         roi_api = roi.copy()    # fix frame checking with bbox
-        detections = track(roi, np.array(results.data, dtype=float))
+        detections = track(roi, np.array(preds, dtype=float))
         for d in detections:
             if d.tracker_id is not None and d.rect.width * d.rect.height >= cf.obj_size:
                 tracking = tracking_info.get(d.tracker_id)
