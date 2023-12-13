@@ -78,7 +78,7 @@ class CustomModel:
         boxes = self._clip_boxes(boxes, original_shape)
         return boxes
 
-    def _non_max_suppression(self, prediction: np.ndarray, conf_thres: float = 0.25, iou_thres: float = 0.45,max_det: int = 300) -> List[np.ndarray]:
+    def _non_max_suppression(self, prediction: np.ndarray, classes, conf_thres: float = 0.25, iou_thres: float = 0.45,max_det: int = 300) -> List[np.ndarray]:
         nc = prediction.shape[1] - 4  # number of classes
         mi = 4 + nc  # mask start index
         xc = prediction[:, 4:mi].max(1) > conf_thres  # candidates
@@ -103,6 +103,9 @@ class CustomModel:
             ids = x[:, 4:].argmax(1, keepdims=True)
             max_vals = x[:, 4:].max(1, keepdims=True)
             x = np.concatenate((box, max_vals, ids), 1)[max_vals.flatten() > conf_thres]
+
+            if classes:
+                x = x[np.isin(x[:,-1], classes)]
 
             # Check shape
             n = x.shape[0]  # number of boxes
@@ -145,8 +148,8 @@ class CustomModel:
         im = np.ascontiguousarray(im)
         return im
 
-    def _postprocess(self, preds, ori_h, ori_w, processed_h, processed_w):
-        preds = self._non_max_suppression(preds, conf_thres=.25)
+    def _postprocess(self, preds: np.ndarray, ori_h, ori_w, processed_h, processed_w, classes):
+        preds = self._non_max_suppression(preds, classes, conf_thres=.25)
         if len(preds) > 0:
             preds = preds[0]
             scaled_boxes = self._scale_boxes(
@@ -160,10 +163,10 @@ class CustomModel:
 
         return preds
 
-    def __call__(self, im: np.ndarray, classes):
+    def __call__(self, im: np.ndarray, classes=None):
         ori_h, ori_w, _ = im.shape
         im = self._preprocess(im)
         _, _, processed_h, processed_w = im.shape
         preds = self.session.run([], {self.input_name: im})[0]
-        preds = self._postprocess(preds, ori_h, ori_w, processed_h, processed_w)
+        preds = self._postprocess(preds, ori_h, ori_w, processed_h, processed_w, classes)
         return preds
