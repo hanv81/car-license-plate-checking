@@ -6,7 +6,7 @@ from typing import List, Tuple
 
 @dataclass
 class CustomModel:
-    session = onnxruntime.InferenceSession('model/yolov8n.onnx', None)
+    session = onnxruntime.InferenceSession('model/yolov8n.onnx', providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
     input_name = session.get_inputs()[0].name
 
     def _xywh2xyxy(self, x: np.ndarray) -> np.ndarray:
