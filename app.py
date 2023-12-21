@@ -63,7 +63,10 @@ def main():
         elif key == ord('r'):
             resize = not resize
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        track_roi(frame[top:bottom, left:right], model, tracker, cf, tracking_info, draw_bbox)
+        roi = frame[top:bottom, left:right]
+        preds = model(roi, classes=[2])
+        if len(preds) > 0:
+            track_roi(roi, preds, tracker, cf, tracking_info, draw_bbox)
         if draw_bbox:
             cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 2)
 
@@ -93,11 +96,7 @@ def main():
     cap.release()
     cv2.destroyAllWindows()
 
-def track_roi(roi:np.ndarray, model: CustomModel, tracker:BYTETracker, config:Config, tracking_info:dict, draw_bbox:bool):
-    preds = model(roi, classes=[2])
-    if len(preds) == 0:
-        return
-    
+def track_roi(roi:np.ndarray, preds, tracker:BYTETracker, config:Config, tracking_info:dict, draw_bbox:bool):
     roi_api = roi.copy()
     tracks = tracker.update(np.array(preds), roi)
     for t in tracks:
