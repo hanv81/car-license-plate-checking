@@ -30,9 +30,7 @@ def main():
     left, top, right, bottom = cf.roi
 
     tracking_info = {}
-    show_fps = True
-    draw_bbox = True
-    resize = True
+    show_fps, draw_bbox, resize, track = True, True, True, True
     frame_size = None
     screen = screeninfo.get_monitors()[0]
     
@@ -62,10 +60,12 @@ def main():
             draw_bbox = not draw_bbox
         elif key == ord('r'):
             resize = not resize
+        elif key == ord('t'):
+            track = not track
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         roi = frame[top:bottom, left:right]
         preds = model(roi, classes=[2])
-        if len(preds) > 0:
+        if len(preds) > 0 and track:
             track_roi(roi, preds, tracker, cf, tracking_info, draw_bbox)
         if draw_bbox:
             cv2.rectangle(frame, (left, top), (right, bottom), (0,255,0), 2)
