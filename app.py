@@ -1,16 +1,49 @@
-import io, cv2, time, requests, threading
+import io, cv2, time, requests, threading, screeninfo
 import numpy as np
 from config import Config
-import screeninfo
 from PIL import Image
 from model import CustomModel
 from boxmot import BYTETracker
+from paho.mqtt.client import Client
 
 MAX_CALL = 3
+delimiter = b'@#$*'
+
+def start_mqtt(host, port):
+    def on_connect(client, userdata, flags, rc):
+        print("Connected to MQTT Broker!" if rc == 0 else f'Failed to connect, return code {rc}')
+    def on_subscribe(client, userdata, mid, granted_qos):
+        print("Subscribed:", mid , granted_qos)
+    def on_message(client, userdata, msg):
+        msg, identified = msg.payload.split(delimiter, 1)
+        msg = msg.decode()
+        identified = bool(identified)
+        print(msg, identified)
+
+    client = Client(f'python-mqtt-{np.random.randint(1000)}')
+    client.on_connect = on_connect
+    client.on_subscribe = on_subscribe
+    client.on_message = on_message
+    client.connect(host, port)
+    client.subscribe('topic-response', qos=1)
+    threading.Thread(target=client.loop_forever).start()
+
+    return client
+
+# client = start_mqtt('localhost', 1883)
+
+def publish_mqtt(frame:np.ndarray, bbox):
+    bbox = ' '.join(bbox)
+    img = Image.fromarray(frame)
+    img_buffer = io.BytesIO()
+    img.save(img_buffer, format='JPEG')
+    img_data = img_buffer.getvalue()
+    payload = img_data + delimiter + bbox.encode()
+    client.publish('topic-request', payload)
 
 def call_backend_api(url, frame, bbox):
     byte_io = io.BytesIO()
-    Image.fromarray(frame).save(byte_io, format='PNG')
+    Image.fromarray(frame).save(byte_io, format='JPEG')
     response = requests.post(url=url + '/verify', files=dict(file=byte_io.getvalue()), params={'bbox':bbox})
     byte_io.close()
     return response
@@ -115,6 +148,8 @@ def track_roi(roi:np.ndarray, preds, tracker:BYTETracker, config:Config, trackin
             threading.Thread(target=check_detection, 
                              args=(config.backend_url, roi_api, map(str, (x1,y1,x2,y2)), id, tracking)
                             ).start()
+
+            # publish_mqtt(roi_api, map(str, (x1,y1,x2,y2)))
 
         if draw_bbox:
             info = tracking['info']
