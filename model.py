@@ -158,8 +158,6 @@ class CustomModel:
                 original_shape=(ori_h, ori_w),
             )
             preds[:, :4] = scaled_boxes.round()
-            preds[:, 4] = preds[:, 4] * 100
-            preds = preds.astype(int).tolist()
 
         return preds
 
